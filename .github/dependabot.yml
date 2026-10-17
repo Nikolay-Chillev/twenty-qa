@@ -1,0 +1,16 @@
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      github-actions:
+        patterns: ["*"]
+
+  # Bumps the pinned Twenty, Postgres, Redis and Mailpit images; CI proves the suite
+  # still passes. Twenty releases several times a week, so weekly keeps the noise down.
+  - package-ecosystem: docker-compose
+    directory: /
+    schedule:
+      interval: weekly
