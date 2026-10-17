@@ -7,15 +7,21 @@ cd "$(dirname "$0")/.."
 # Throwaway secrets for this environment: the key Twenty encrypts secrets with, and the
 # password of the test users. Missing ones are added; existing ones are kept, because
 # the users in the database were created with them.
+add_if_missing() {
+  if grep -q "^$1=" .env; then
+    return
+  fi
+  # Start on a new line, even if .env was edited by hand and lacks a final newline.
+  if [ -s .env ] && [ -n "$(tail -c 1 .env)" ]; then
+    echo >> .env
+  fi
+  echo "$1=$2" >> .env
+  echo "Added $1 to .env"
+}
+
 touch .env
-if ! grep -q '^ENCRYPTION_KEY=' .env; then
-  echo "ENCRYPTION_KEY=$(openssl rand -base64 32)" >> .env
-  echo "Added ENCRYPTION_KEY to .env"
-fi
-if ! grep -q '^TWENTY_PASSWORD=' .env; then
-  echo "TWENTY_PASSWORD=Qa1-$(openssl rand -hex 12)" >> .env
-  echo "Added TWENTY_PASSWORD to .env"
-fi
+add_if_missing ENCRYPTION_KEY "$(openssl rand -base64 32)"
+add_if_missing TWENTY_PASSWORD "Qa1-$(openssl rand -hex 12)"
 
 echo "Starting containers (the first start runs migrations and takes about 90 seconds)..."
 docker compose up -d --wait
