@@ -60,7 +60,21 @@ npm test
 
 Staged files are linted and formatted before each commit (husky and lint-staged).
 
-Settings come from environment variables and are validated on start: `TWENTY_URL` (default `http://localhost:3000`) and `MAILPIT_URL` (default `http://localhost:8026`).
+Settings come from environment variables and are validated on start: `TWENTY_URL` (default `http://localhost:3000`), `MAILPIT_URL` (default `http://localhost:8026`) and `TWENTY_PASSWORD`. Variables in `.env` are read too; the process environment wins.
+
+### Test data
+
+Twenty has no seed command in production mode, so the `setup` project creates everything through the API, the way the app does, before any other test runs:
+
+| What | Value |
+|---|---|
+| Workspace | `QA Workspace`, activated |
+| Admin (owns the workspace) | `admin@example.com`, Мария Иванова |
+| Member (joined through the invite link) | `member@example.com`, Георги Петров |
+| Password of both | `TWENTY_PASSWORD`, generated into `.env` by `scripts/start.sh` |
+| API key with the Admin role | saved with the workspace id in `playwright/.auth/workspace.json` |
+
+Both users are taken through onboarding and signed in once in the browser; their state is saved in `playwright/.auth/`, so UI tests open the app already signed in (as the admin, unless a test picks another role). Runs against an existing environment reuse the users, the workspace and a working API key.
 
 ## License
 
