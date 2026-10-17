@@ -42,8 +42,15 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    # /healthz answers before the API can serve requests, so ask the GraphQL API
+    # something that needs the database instead.
     healthcheck:
-      test: curl --fail http://localhost:3000/healthz
+      test:
+        - CMD-SHELL
+        - >-
+          curl -fsS http://localhost:3000/metadata -H 'Content-Type: application/json'
+          -d '{"query":"{ checkUserExists(email: \"ready@example.com\") { exists } }"}'
+          | grep -q '"exists"'
       interval: 5s
       timeout: 5s
       retries: 60
@@ -59,6 +66,22 @@ services:
     depends_on:
       server:
         condition: service_healthy
+    # Emails and webhooks are sent by the worker. It is ready once its BullMQ worker for
+    # the email queue is connected to Redis (connection name bull:<base64 "email-queue">).
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - >-
+          const s = require('net').connect(6379, 'redis', () => s.write('CLIENT LIST\r\n'));
+          let out = '';
+          s.on('data', (chunk) => { out += chunk; if (out.includes('name=bull:ZW1haWwtcXVldWU=')) process.exit(0); });
+          s.on('error', () => process.exit(1));
+          setTimeout(() => process.exit(1), 3000);
+      interval: 5s
+      timeout: 5s
+      retries: 30
 
   db:
     image: postgres:16.15@sha256:ca0bd484cb98bf4b24eb1010e73fb3fcbd6714d240fbc1a10eea5b7dbecb641d

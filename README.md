@@ -29,6 +29,8 @@ The environment differs from a default Twenty installation in a few places, all 
 
 Other limits (email send rate, webhook calls, workflow runs) keep their defaults.
 
+**Readiness.** `/healthz` reports OK before the API can serve requests, and keeps doing so with the database down, so the server's health check asks the GraphQL API a question that needs the database. The worker sends emails and calls webhooks; it counts as ready once its email queue consumer is connected to Redis. `scripts/start.sh` returns only when both are healthy.
+
 ## Getting started
 
 Requirements: Docker with Compose v2.
