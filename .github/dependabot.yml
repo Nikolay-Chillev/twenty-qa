@@ -8,6 +8,18 @@ updates:
       github-actions:
         patterns: ["*"]
 
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      npm:
+        patterns: ["*"]
+    ignore:
+      # typescript-eslint supports TypeScript below 6.1; move to 7 once it does.
+      - dependency-name: typescript
+        update-types: ["version-update:semver-major"]
+
   # Bumps the pinned Twenty, Postgres, Redis and Mailpit images; CI proves the suite
   # still passes. Twenty releases several times a week, so weekly keeps the noise down.
   - package-ecosystem: docker-compose
