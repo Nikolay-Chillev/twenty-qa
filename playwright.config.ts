@@ -1,5 +1,6 @@
 import { defineConfig, devices } from '@playwright/test';
 
+import { storageStateOf } from './src/auth/users';
 import { config } from './src/config';
 
 const ci = Boolean(process.env.CI);
@@ -28,7 +29,8 @@ export default defineConfig({
     {
       name: 'chromium',
       testDir: './tests/ui',
-      use: { ...devices['Desktop Chrome'] },
+      // Tests run as the admin unless they pick another role with test.use().
+      use: { ...devices['Desktop Chrome'], storageState: storageStateOf('admin') },
       dependencies: ['setup'],
     },
   ],
