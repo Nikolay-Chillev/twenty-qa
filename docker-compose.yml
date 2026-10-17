@@ -1,0 +1,83 @@
+name: twenty-qa
+
+# Twenty CRM with its worker, Postgres and Redis, plus Mailpit to catch every email.
+# Images are pinned by digest so every run tests exactly the same build.
+
+x-twenty: &twenty
+  image: twentycrm/twenty:v2.48.0@sha256:43fab4bffacdcd63ff3c9257b7f8985a4424d81e9eb43982b9c16a841d555e52
+  volumes:
+    - server-local-data:/app/packages/twenty-server/.local-storage
+  environment: &twenty-env
+    PG_DATABASE_URL: postgres://postgres:postgres@db:5432/default
+    REDIS_URL: redis://redis:6379
+    SERVER_URL: http://localhost:3000
+    STORAGE_TYPE: local
+    ENCRYPTION_KEY: ${ENCRYPTION_KEY:?run scripts/start.sh or set ENCRYPTION_KEY}
+    EMAIL_DRIVER: smtp
+    EMAIL_SMTP_HOST: mailpit
+    EMAIL_SMTP_PORT: 1025
+    EMAIL_SMTP_NO_TLS: "true"
+    EMAIL_FROM_ADDRESS: crm@example.com
+    EMAIL_FROM_NAME: Twenty QA
+
+services:
+  server:
+    <<: *twenty
+    ports:
+      - "3000:3000"
+    environment:
+      <<: *twenty-env
+      NODE_PORT: 3000
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: curl --fail http://localhost:3000/healthz
+      interval: 5s
+      timeout: 5s
+      retries: 60
+
+  worker:
+    <<: *twenty
+    command: ["yarn", "worker:prod"]
+    environment:
+      <<: *twenty-env
+      DISABLE_DB_MIGRATIONS: "true"
+      DISABLE_CRON_JOBS_REGISTRATION: "true"
+    depends_on:
+      server:
+        condition: service_healthy
+
+  db:
+    image: postgres:16.15@sha256:ca0bd484cb98bf4b24eb1010e73fb3fcbd6714d240fbc1a10eea5b7dbecb641d
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: default
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    healthcheck:
+      test: pg_isready -U postgres -h localhost -d postgres
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:8.10.2@sha256:2c2dff791878316e3b083188be0d578423b24813cdda5de0e80ea4f7b3e6bfd6
+    command: ["--maxmemory-policy", "noeviction"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  mailpit:
+    image: axllent/mailpit:v1.31.4@sha256:b68349e3a014b90c5610bfb26b2ae36f3892d7b8cf25ee140c6c71c98d2fcf48
+    ports:
+      - "8026:8025"
+
+volumes:
+  db-data:
+  server-local-data:
