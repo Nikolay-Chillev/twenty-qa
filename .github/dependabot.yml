@@ -14,3 +14,8 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    ignore:
+      # Twenty ships and tests with Postgres 16, and a major upgrade cannot reuse
+      # an existing data volume. Follow Twenty's compose file instead.
+      - dependency-name: postgres
+        update-types: ["version-update:semver-major"]
