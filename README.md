@@ -41,6 +41,27 @@ Requirements: Docker with Compose v2.
 
 The first start runs the database migrations and takes about 90 seconds. Stop the environment with `docker compose down`, or add `-v` to also drop its data.
 
+## Running the tests
+
+Requirements: Node.js 24 and the environment above.
+
+```bash
+npm ci
+npx playwright install --with-deps chromium
+npm test
+```
+
+| Command | What it does |
+|---|---|
+| `npm test` | Runs all Playwright projects |
+| `npm run lint` | ESLint with type-aware rules, including Playwright's |
+| `npm run typecheck` | `tsc`; Playwright strips types without checking them |
+| `npm run format:check` | Prettier |
+
+Staged files are linted and formatted before each commit (husky and lint-staged).
+
+Settings come from environment variables and are validated on start: `TWENTY_URL` (default `http://localhost:3000`) and `MAILPIT_URL` (default `http://localhost:8026`).
+
 ## License
 
 [MIT](LICENSE)
