@@ -3,8 +3,9 @@ name: twenty-qa
 # Twenty CRM with its worker, Postgres and Redis, plus Mailpit to catch every email.
 # Images are pinned by digest so every run tests exactly the same build.
 
+# Settings shared by the server and the worker. The image is repeated in both services
+# rather than kept here, so Dependabot finds it and bumps both together.
 x-twenty: &twenty
-  image: twentycrm/twenty:v2.48.0@sha256:43fab4bffacdcd63ff3c9257b7f8985a4424d81e9eb43982b9c16a841d555e52
   volumes:
     - server-local-data:/app/packages/twenty-server/.local-storage
   environment: &twenty-env
@@ -23,6 +24,7 @@ x-twenty: &twenty
 services:
   server:
     <<: *twenty
+    image: twentycrm/twenty:v2.48.0@sha256:43fab4bffacdcd63ff3c9257b7f8985a4424d81e9eb43982b9c16a841d555e52
     ports:
       - "3000:3000"
     environment:
@@ -41,6 +43,7 @@ services:
 
   worker:
     <<: *twenty
+    image: twentycrm/twenty:v2.48.0@sha256:43fab4bffacdcd63ff3c9257b7f8985a4424d81e9eb43982b9c16a841d555e52
     command: ["yarn", "worker:prod"]
     environment:
       <<: *twenty-env
