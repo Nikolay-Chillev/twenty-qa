@@ -4,10 +4,17 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-# Twenty encrypts secrets at rest; a throwaway key per environment is enough for tests.
-if [ ! -f .env ]; then
-  echo "ENCRYPTION_KEY=$(openssl rand -base64 32)" > .env
-  echo "Created .env with a new ENCRYPTION_KEY"
+# Throwaway secrets for this environment: the key Twenty encrypts secrets with, and the
+# password of the test users. Missing ones are added; existing ones are kept, because
+# the users in the database were created with them.
+touch .env
+if ! grep -q '^ENCRYPTION_KEY=' .env; then
+  echo "ENCRYPTION_KEY=$(openssl rand -base64 32)" >> .env
+  echo "Added ENCRYPTION_KEY to .env"
+fi
+if ! grep -q '^TWENTY_PASSWORD=' .env; then
+  echo "TWENTY_PASSWORD=Qa1-$(openssl rand -hex 12)" >> .env
+  echo "Added TWENTY_PASSWORD to .env"
 fi
 
 echo "Starting containers (the first start runs migrations and takes about 90 seconds)..."
