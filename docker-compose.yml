@@ -20,6 +20,13 @@ x-twenty: &twenty
     EMAIL_SMTP_NO_TLS: "true"
     EMAIL_FROM_ADDRESS: crm@example.com
     EMAIL_FROM_NAME: Twenty QA
+    # Test environment: the whole suite runs from one workspace and invites many users,
+    # so these limits are raised. Defaults in comments; see "Test environment" in the README.
+    API_RATE_LIMITING_SHORT_LIMIT: 1000 # 100 per second
+    API_RATE_LIMITING_LONG_LIMIT: 100000 # 100 per minute, shared by all API keys of a workspace
+    INVITATION_SENDING_BY_EMAIL_THROTTLE_LIMIT: 1000 # 10 per address per week
+    INVITATION_SENDING_BY_WORKSPACE_THROTTLE_LIMIT: 100000 # 500 per workspace per week
+    EMAIL_SEND_WORKSPACE_DAILY_LIMIT: 100000 # 1,000 per workspace per day
 
 services:
   server:
