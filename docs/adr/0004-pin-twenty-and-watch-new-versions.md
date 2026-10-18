@@ -16,5 +16,5 @@ Twenty released 2.46, 2.47 and 2.48 within one week in October 2026. Testing `la
 ## Consequences
 
 - A red pull request always means the change under review, not a new Twenty release.
-- Regressions in new versions are seen within a day of the release, often before the weekly bump.
+- Until the canary run exists, regressions in new versions show up with the weekly bump. Once it runs every night, they will be seen within a day of the release, often before the bump.
 - Findings record the version and image digest they were seen on.
