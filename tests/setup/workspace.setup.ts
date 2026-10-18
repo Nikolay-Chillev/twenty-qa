@@ -40,7 +40,11 @@ for (const role of ['admin', 'member'] satisfies Role[]) {
     await page.getByPlaceholder('Password').fill(password());
     await page.getByRole('button', { name: 'Sign in' }).click();
 
-    await expect(page.getByRole('button', { name: WORKSPACE_NAME })).toBeVisible();
+    // The first sign-in on a fresh environment also loads the whole front end and the
+    // workspace metadata; on a CI runner the app rendered just after 5 seconds.
+    await expect(page.getByRole('button', { name: WORKSPACE_NAME })).toBeVisible({
+      timeout: 30_000,
+    });
     await page.context().storageState({ path: storageStateOf(role) });
   });
 }

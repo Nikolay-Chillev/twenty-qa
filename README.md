@@ -1,5 +1,8 @@
 # Twenty QA
 
+[![CI](https://github.com/Nikolay-Chillev/twenty-qa/actions/workflows/ci.yml/badge.svg)](https://github.com/Nikolay-Chillev/twenty-qa/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+
 Test automation for [Twenty](https://github.com/twentyhq/twenty), an open-source CRM, written in TypeScript with Playwright. The suite covers what a QA team at a B2B SaaS company would care about: the REST and GraphQL APIs and their contracts, roles and permissions, the data grid, kanban and editor in the UI, transactional emails, accessibility and performance. Everything runs against a disposable Docker environment and in CI.
 
 > Work in progress. The plan is tracked in the [milestones](https://github.com/Nikolay-Chillev/twenty-qa/milestones).
@@ -88,6 +91,16 @@ Tests import `test` and `expect` from [`src/fixtures`](src/fixtures/index.ts), w
 | `adminToken`, `password` | For `/metadata` calls an API key cannot make, such as invitations |
 
 GraphQL calls go through [`graphql()`](src/api/graphql.ts), which fails on GraphQL errors even when the HTTP status is 200. All HTTP traffic, Mailpit included, goes through Playwright's request context, so it shows up in traces.
+
+## Continuous integration
+
+Every pull request and every push to `main` runs [`ci.yml`](.github/workflows/ci.yml):
+
+1. Lint, type check and format check
+2. A fresh Twenty and Mailpit started with `scripts/start.sh`
+3. The whole suite in Chromium, the setup project first
+
+The HTML report and the Allure results are kept as artifacts of the run, and the container logs too when something fails. In CI a failed test is retried once so the report can tell a flaky test from a broken one, but the run still fails. Changes to documentation only skip the tests. A single `CI passed` check sums up the run.
 
 ## License
 
