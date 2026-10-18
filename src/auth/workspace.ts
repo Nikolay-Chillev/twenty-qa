@@ -184,13 +184,13 @@ export async function signInAdmin(request: APIRequestContext, password: string):
   return token;
 }
 
-/** Signs in the member, joining the workspace through its invite link the first time. */
+/** Signs in a member, joining the workspace through its invite link the first time. */
 export async function signInMember(
   request: APIRequestContext,
   password: string,
   adminToken: string,
+  member: TestUser = USERS.member,
 ): Promise<string> {
-  const member = USERS.member;
   let loginToken: string | null | undefined;
 
   if (await userExists(request, member.email)) {
