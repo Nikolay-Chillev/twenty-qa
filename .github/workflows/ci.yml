@@ -80,8 +80,10 @@ jobs:
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
 
+      # Pull requests run the UI in Chromium only; Firefox and WebKit join in the
+      # nightly workflow (#20).
       - name: Run tests
-        run: npx playwright test
+        run: npx playwright test --project=unit --project=api --project=chromium
 
       - name: Upload the HTML report
         if: ${{ !cancelled() }}
