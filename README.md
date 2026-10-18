@@ -11,7 +11,7 @@ Test automation for [Twenty](https://github.com/twentyhq/twenty), an open-source
 
 | Service | Image | URL |
 |---|---|---|
-| Twenty 2.48.0 (server and worker) | [twentycrm/twenty](https://hub.docker.com/r/twentycrm/twenty) | http://localhost:3000 |
+| Twenty 2.48.0 (server and worker) | [twentycrm/twenty](https://hub.docker.com/r/twentycrm/twenty) | API: http://localhost:3000<br>Test workspace: http://qa.localhost:3000 |
 | Postgres 16 and Redis 8 | official images | internal only |
 | Mailpit (catches all outgoing email) | [axllent/mailpit](https://github.com/axllent/mailpit) | http://localhost:8026 |
 
@@ -29,6 +29,8 @@ The environment differs from a default Twenty installation in a few places, all 
 | `INVITATION_SENDING_BY_EMAIL_THROTTLE_LIMIT` | 10 invitations per address per week | 1,000 | Invitation tests resend to the same addresses |
 | `INVITATION_SENDING_BY_WORKSPACE_THROTTLE_LIMIT` | 500 invitations per workspace per week | 100,000 | Every run invites users |
 | `EMAIL_SEND_WORKSPACE_DAILY_LIMIT` | 1,000 emails per workspace per day | 100,000 | A local environment is reused across many runs |
+| `IS_MULTIWORKSPACE_ENABLED` | one workspace on `localhost` | several, each on its own subdomain | As on Twenty's cloud; needed to test tenant isolation ([ADR 0001](docs/adr/0001-run-twenty-with-multiple-workspaces.md)) |
+| `IS_WORKSPACE_CREATION_LIMITED_TO_SERVER_ADMINS` | only server admins create workspaces | anyone may | Tests create a second workspace when they need one |
 
 Other limits (email send rate, webhook calls, workflow runs) keep their defaults.
 
@@ -50,13 +52,14 @@ Requirements: Node.js 24 and the environment above.
 
 ```bash
 npm ci
-npx playwright install --with-deps chromium
+npx playwright install --with-deps chromium firefox webkit
 npm test
 ```
 
 | Command | What it does |
 |---|---|
-| `npm test` | Runs all Playwright projects |
+| `npm test` | Runs all Playwright projects: unit, setup, API and the UI in Chromium, Firefox and WebKit |
+| `npm test -- --project=api --project=chromium` | Only some projects; the setup project runs first whenever a project needs it |
 | `npm run lint` | ESLint with type-aware rules, including Playwright's |
 | `npm run typecheck` | `tsc`; Playwright strips types without checking them |
 | `npm run format:check` | Prettier |
@@ -71,7 +74,7 @@ Twenty has no seed command in production mode, so the `setup` project creates ev
 
 | What | Value |
 |---|---|
-| Workspace | `QA Workspace`, activated |
+| Workspace | `QA Workspace` on `http://qa.localhost:3000`, activated |
 | Admin (owns the workspace) | `admin@example.com`, Мария Иванова |
 | Member (joined through the invite link) | `member@example.com`, Георги Петров |
 | Password of both | `TWENTY_PASSWORD`, generated into `.env` by `scripts/start.sh` |
@@ -98,7 +101,7 @@ Every pull request and every push to `main` runs [`ci.yml`](.github/workflows/ci
 
 1. Lint, type check and format check
 2. A fresh Twenty and Mailpit started with `scripts/start.sh`
-3. The whole suite in Chromium, the setup project first
+3. The unit, API and UI tests, the UI in Chromium, the setup project first
 
 The HTML report and the Allure results are kept as artifacts of the run, and the container logs too when something fails. In CI a failed test is retried once so the report can tell a flaky test from a broken one, but the run still fails. Changes to documentation only skip the tests. A single `CI passed` check sums up the run.
 
