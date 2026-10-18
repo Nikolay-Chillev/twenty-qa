@@ -1,9 +1,8 @@
 import { z } from 'zod';
 
 import { graphql } from '../../src/api/graphql';
-import type { TestUser } from '../../src/auth/users';
+import { type TestUser, WORKSPACE_URL } from '../../src/auth/users';
 import { signInMember } from '../../src/auth/workspace';
-import { config } from '../../src/config';
 import { expect, test } from '../../src/fixtures';
 
 test(
@@ -26,6 +25,6 @@ test(
     const email = await mailbox.waitForEmail({ subject: 'Reset Password' });
 
     expect(email.Subject).toBe('Action Needed to Reset Password');
-    expect(email.Text).toContain(`${config.TWENTY_URL}/reset-password/`);
+    expect(email.Text).toContain(`${WORKSPACE_URL}/reset-password/`);
   },
 );

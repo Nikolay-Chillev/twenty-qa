@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-import { mergeEnvironment, parseConfig } from '../../src/config';
+import { mergeEnvironment, parseConfig, workspaceUrl } from '../../src/config';
 
 test.describe('test environment settings', () => {
   test('default to the local Docker environment', () => {
@@ -30,5 +30,10 @@ test.describe('test environment settings', () => {
     });
 
     expect(env).toEqual({ TWENTY_PASSWORD: 'from-file', MAILPIT_URL: 'http://process:8026' });
+  });
+
+  test('put a workspace on its subdomain of the server', () => {
+    expect(workspaceUrl('http://localhost:3000', 'qa')).toBe('http://qa.localhost:3000');
+    expect(workspaceUrl('https://crm.example.com/', 'acme')).toBe('https://acme.crm.example.com');
   });
 });

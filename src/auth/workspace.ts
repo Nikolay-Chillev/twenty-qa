@@ -5,8 +5,14 @@ import type { APIRequestContext } from '@playwright/test';
 import { z } from 'zod';
 
 import { graphql } from '../api/graphql';
-import { config } from '../config';
-import { type TestUser, USERS, WORKSPACE_NAME, workspaceFile } from './users';
+import {
+  type TestUser,
+  USERS,
+  WORKSPACE_NAME,
+  WORKSPACE_SUBDOMAIN,
+  WORKSPACE_URL,
+  workspaceFile,
+} from './users';
 
 // Twenty has no seed command in production mode, so the workspace and its users are
 // created the way the app itself does it, through the /metadata GraphQL API.
@@ -37,13 +43,15 @@ async function userExists(request: APIRequestContext, email: string): Promise<bo
   return data.checkUserExists.exists;
 }
 
-/** Signs in with a password and returns a login token for the user's first workspace. */
+/** Signs in with a password and returns a login token for the suite's workspace, if a member. */
 async function signIn(request: APIRequestContext, user: TestUser, password: string) {
   const data = await graphql(request, '/metadata', {
     query: `mutation($email: String!, $password: String!) {
       signIn(email: $email, password: $password) {
         tokens { accessOrWorkspaceAgnosticToken { token } }
-        availableWorkspaces { availableWorkspacesForSignIn { loginToken } }
+        availableWorkspaces {
+          availableWorkspacesForSignIn { loginToken workspaceUrls { subdomainUrl } }
+        }
       }
     }`,
     variables: { email: user.email, password },
@@ -51,17 +59,25 @@ async function signIn(request: APIRequestContext, user: TestUser, password: stri
       signIn: z.object({
         tokens: TokenPair,
         availableWorkspaces: z.object({
-          availableWorkspacesForSignIn: z.array(z.object({ loginToken: z.string().nullable() })),
+          availableWorkspacesForSignIn: z.array(
+            z.object({
+              loginToken: z.string().nullable(),
+              workspaceUrls: z.object({ subdomainUrl: z.url() }),
+            }),
+          ),
         }),
       }),
     }),
   });
   return {
     workspaceAgnosticToken: data.signIn.tokens.accessOrWorkspaceAgnosticToken.token,
-    loginToken: data.signIn.availableWorkspaces.availableWorkspacesForSignIn[0]?.loginToken,
+    loginToken: data.signIn.availableWorkspaces.availableWorkspacesForSignIn.find(
+      (workspace) => new URL(workspace.workspaceUrls.subdomainUrl).origin === WORKSPACE_URL,
+    )?.loginToken,
   };
 }
 
+/** Exchanges a login token for an access token; Twenty only accepts the workspace's own address as the origin. */
 async function accessTokenFrom(request: APIRequestContext, loginToken: string): Promise<string> {
   const data = await graphql(request, '/metadata', {
     query: `mutation($loginToken: String!, $origin: String!) {
@@ -69,7 +85,7 @@ async function accessTokenFrom(request: APIRequestContext, loginToken: string): 
         tokens { accessOrWorkspaceAgnosticToken { token } }
       }
     }`,
-    variables: { loginToken, origin: config.TWENTY_URL },
+    variables: { loginToken, origin: WORKSPACE_URL },
     data: z.object({ getAuthTokensFromLoginToken: z.object({ tokens: TokenPair }) }),
   });
   return data.getAuthTokensFromLoginToken.tokens.accessOrWorkspaceAgnosticToken.token;
@@ -163,7 +179,7 @@ export async function signInAdmin(request: APIRequestContext, password: string):
       query: `mutation($input: SignUpInNewWorkspaceInput) {
         signUpInNewWorkspace(input: $input) { loginToken { token } }
       }`,
-      variables: { input: { displayName: WORKSPACE_NAME } },
+      variables: { input: { displayName: WORKSPACE_NAME, subdomain: WORKSPACE_SUBDOMAIN } },
       token: workspaceAgnosticToken,
       data: z.object({ signUpInNewWorkspace: z.object({ loginToken: Token }) }),
     });

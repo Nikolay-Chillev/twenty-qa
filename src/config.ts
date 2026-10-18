@@ -25,6 +25,13 @@ export function parseConfig(env: Record<string, string | undefined>): Config {
   return parsed.data;
 }
 
+/** A workspace's own address: its subdomain in front of the server's host. */
+export function workspaceUrl(serverUrl: string, subdomain: string): string {
+  const url = new URL(serverUrl);
+  url.hostname = `${subdomain}.${url.hostname}`;
+  return url.origin;
+}
+
 /** Variables from a .env file, overridden by those set in the process environment. */
 export function mergeEnvironment(
   dotenv: string | undefined,
