@@ -76,6 +76,19 @@ Twenty has no seed command in production mode, so the `setup` project creates ev
 
 Both users are taken through onboarding and signed in once in the browser; their state is saved in `playwright/.auth/`, so UI tests open the app already signed in (as the admin, unless a test picks another role). Runs against an existing environment reuse the users, the workspace and a working API key.
 
+### Writing tests
+
+Tests import `test` and `expect` from [`src/fixtures`](src/fixtures/index.ts), which adds:
+
+| Fixture | What it gives a test |
+|---|---|
+| `api` | REST clients for companies and people with the suite's API key; every response is checked against a Zod schema in [`src/schemas`](src/schemas/records.ts) |
+| `anonymous` | The REST API without credentials |
+| `mailbox` | A unique email address and `waitForEmail()`, read from Mailpit |
+| `adminToken`, `password` | For `/metadata` calls an API key cannot make, such as invitations |
+
+GraphQL calls go through [`graphql()`](src/api/graphql.ts), which fails on GraphQL errors even when the HTTP status is 200. All HTTP traffic, Mailpit included, goes through Playwright's request context, so it shows up in traces.
+
 ## License
 
 [MIT](LICENSE)
