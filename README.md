@@ -19,7 +19,7 @@ All images are pinned by digest, so a run always tests the same build.
 
 ### Test environment
 
-The environment differs from a default Twenty installation in a few places, all set in [`docker-compose.yml`](docker-compose.yml):
+The environment differs from a default Twenty installation in a few places, all set in [`docker-compose.yml`](docker-compose.yml) ([ADR 0005](docs/adr/0005-adjust-the-environment-for-automated-runs.md)):
 
 | Setting | Twenty default | Here | Why |
 |---|---|---|---|
@@ -104,6 +104,12 @@ Every pull request and every push to `main` runs [`ci.yml`](.github/workflows/ci
 3. The unit, API and UI tests, the UI in Chromium, the setup project first
 
 The HTML report and the Allure results are kept as artifacts of the run, and the container logs too when something fails. In CI a failed test is retried once so the report can tell a flaky test from a broken one, but the run still fails. Changes to documentation only skip the tests. A single `CI passed` check sums up the run.
+
+## Documentation
+
+- [Test strategy](docs/test-strategy.md): scope, risks and priorities, test levels, environments, merge and release criteria
+- [Findings](docs/findings.md): what the suite found in Twenty and its environment
+- [Architecture decision records](docs/adr/): why Twenty, TypeScript and Playwright, multiple workspaces, pinning and the environment's deviations
 
 ## License
 
