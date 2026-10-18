@@ -200,18 +200,21 @@ export async function signInAdmin(request: APIRequestContext, password: string):
   return token;
 }
 
-/** Signs in a member, joining the workspace through its invite link the first time. */
+/** Signs in a member, joining the workspace through its invite link when not yet in it. */
 export async function signInMember(
   request: APIRequestContext,
   password: string,
   adminToken: string,
   member: TestUser = USERS.member,
 ): Promise<string> {
-  let loginToken: string | null | undefined;
+  let loginToken = (await userExists(request, member.email))
+    ? (await signIn(request, member, password)).loginToken
+    : undefined;
 
-  if (await userExists(request, member.email)) {
-    ({ loginToken } = await signIn(request, member, password));
-  } else {
+  if (!loginToken) {
+    // New users, and users of another workspace (e.g. from an environment created
+    // before it ran with multiple workspaces), join through the invite link; an
+    // existing user proves it with their password.
     const workspace = (await currentUser(request, adminToken)).currentWorkspace;
     const data = await graphql(request, '/metadata', {
       query: `mutation($email: String!, $password: String!, $workspaceId: UUID, $workspaceInviteHash: String) {
@@ -229,9 +232,6 @@ export async function signInMember(
       data: z.object({ signUpInWorkspace: z.object({ loginToken: Token }) }),
     });
     loginToken = data.signUpInWorkspace.loginToken.token;
-  }
-  if (!loginToken) {
-    throw new Error(`${member.email} exists but is not a member of any workspace`);
   }
 
   const token = await accessTokenFrom(request, loginToken);
