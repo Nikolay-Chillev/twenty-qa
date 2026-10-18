@@ -21,6 +21,9 @@ export default defineConfig({
   // one; the run still fails, because a flaky test is a bug to fix, not to hide.
   retries: ci ? 1 : 0,
   failOnFlakyTests: ci,
+  // Twenty's front end is a large single-page app; on a CI runner a page can take
+  // several seconds to render after a navigation, more than the default 5.
+  expect: { timeout: 10_000 },
   reporter: reporters,
   use: {
     baseURL: config.TWENTY_URL,
