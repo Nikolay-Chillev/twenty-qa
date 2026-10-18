@@ -1,6 +1,12 @@
 import { expect, test as setup } from '@playwright/test';
 
-import { type Role, storageStateOf, USERS, WORKSPACE_NAME } from '../../src/auth/users';
+import {
+  type Role,
+  storageStateOf,
+  USERS,
+  WORKSPACE_NAME,
+  WORKSPACE_URL,
+} from '../../src/auth/users';
 import {
   apiKeyFor,
   readSavedWorkspace,
@@ -34,7 +40,7 @@ setup('create the workspace, a user per role and an API key', async ({ request }
 
 for (const role of ['admin', 'member'] satisfies Role[]) {
   setup(`sign in as ${role}`, async ({ page }) => {
-    await page.goto('/');
+    await page.goto(WORKSPACE_URL);
     await page.getByPlaceholder('Email').fill(USERS[role].email);
     await page.getByRole('button', { name: 'Continue', exact: true }).click();
     await page.getByPlaceholder('Password').fill(password());

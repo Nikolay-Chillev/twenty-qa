@@ -1,6 +1,6 @@
 import { defineConfig, devices, type ReporterDescription } from '@playwright/test';
 
-import { storageStateOf } from './src/auth/users';
+import { storageStateOf, WORKSPACE_URL } from './src/auth/users';
 import { config } from './src/config';
 
 const ci = Boolean(process.env.CI);
@@ -26,6 +26,7 @@ export default defineConfig({
   expect: { timeout: 10_000 },
   reporter: reporters,
   use: {
+    // API calls go to the server; UI projects open the workspace's own address.
     baseURL: config.TWENTY_URL,
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
@@ -37,11 +38,35 @@ export default defineConfig({
     // Creates the workspace, the users and their signed-in state for the other projects.
     { name: 'setup', testDir: './tests/setup', testMatch: /.*\.setup\.ts/ },
     { name: 'api', testDir: './tests/api', dependencies: ['setup'] },
+    // UI tests run as the admin unless they pick another role with test.use().
     {
       name: 'chromium',
       testDir: './tests/ui',
-      // Tests run as the admin unless they pick another role with test.use().
-      use: { ...devices['Desktop Chrome'], storageState: storageStateOf('admin') },
+      use: {
+        ...devices['Desktop Chrome'],
+        baseURL: WORKSPACE_URL,
+        storageState: storageStateOf('admin'),
+      },
+      dependencies: ['setup'],
+    },
+    {
+      name: 'firefox',
+      testDir: './tests/ui',
+      use: {
+        ...devices['Desktop Firefox'],
+        baseURL: WORKSPACE_URL,
+        storageState: storageStateOf('admin'),
+      },
+      dependencies: ['setup'],
+    },
+    {
+      name: 'webkit',
+      testDir: './tests/ui',
+      use: {
+        ...devices['Desktop Safari'],
+        baseURL: WORKSPACE_URL,
+        storageState: storageStateOf('admin'),
+      },
       dependencies: ['setup'],
     },
   ],

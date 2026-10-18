@@ -1,5 +1,7 @@
 import path from 'node:path';
 
+import { config, workspaceUrl } from '../config';
+
 export type Role = 'admin' | 'member';
 
 export interface TestUser {
@@ -16,6 +18,10 @@ export const USERS: Record<Role, TestUser> = {
 };
 
 export const WORKSPACE_NAME = 'QA Workspace';
+export const WORKSPACE_SUBDOMAIN = 'qa';
+
+/** Where the workspace's app lives, e.g. http://qa.localhost:3000; the API answers on any host. */
+export const WORKSPACE_URL = workspaceUrl(config.TWENTY_URL, WORKSPACE_SUBDOMAIN);
 
 const authDir = path.join(__dirname, '..', '..', 'playwright', '.auth');
 

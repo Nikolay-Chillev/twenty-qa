@@ -20,6 +20,10 @@ x-twenty: &twenty
     EMAIL_SMTP_NO_TLS: "true"
     EMAIL_FROM_ADDRESS: crm@example.com
     EMAIL_FROM_NAME: Twenty QA
+    # Several workspaces, each on its own subdomain (qa.localhost:3000), as on Twenty's
+    # cloud; anyone may create one, so tests can set up a second tenant (ADR 0001).
+    IS_MULTIWORKSPACE_ENABLED: "true"
+    IS_WORKSPACE_CREATION_LIMITED_TO_SERVER_ADMINS: "false"
     # Test environment: the whole suite runs from one workspace and invites many users,
     # so these limits are raised. Defaults in comments; see "Test environment" in the README.
     API_RATE_LIMITING_SHORT_LIMIT: 1000 # 100 per second
