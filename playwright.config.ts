@@ -1,9 +1,17 @@
-import { defineConfig, devices } from '@playwright/test';
+import { defineConfig, devices, type ReporterDescription } from '@playwright/test';
 
 import { storageStateOf } from './src/auth/users';
 import { config } from './src/config';
 
 const ci = Boolean(process.env.CI);
+
+const reporters: ReporterDescription[] = [
+  ['list'],
+  ['html', { open: 'never' }],
+  ['allure-playwright', { resultsDir: 'allure-results' }],
+];
+// In CI, failures are also shown as annotations on the pull request.
+if (ci) reporters.push(['github']);
 
 export default defineConfig({
   testDir: './tests',
@@ -13,7 +21,7 @@ export default defineConfig({
   // one; the run still fails, because a flaky test is a bug to fix, not to hide.
   retries: ci ? 1 : 0,
   failOnFlakyTests: ci,
-  reporter: [['list'], ['html', { open: 'never' }]],
+  reporter: reporters,
   use: {
     baseURL: config.TWENTY_URL,
     trace: 'retain-on-failure',
