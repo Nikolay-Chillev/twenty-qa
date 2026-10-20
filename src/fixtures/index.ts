@@ -1,22 +1,39 @@
 import { test as base } from '@playwright/test';
 
-import { recordsApi, type RecordsApi } from '../api/records';
+import { graphqlRecordsApi } from '../api/graphql-records';
+import { type CrudApi, recordsApi, type RecordsApi } from '../api/records';
 import { RestClient } from '../api/rest';
 import { readSavedWorkspace, type SavedWorkspace, signInAdmin } from '../auth/workspace';
 import { config } from '../config';
 import { Mailbox } from '../mail/mailbox';
 import { Mailpit } from '../mail/mailpit';
-import { Company, type CompanyInput, Person, type PersonInput } from '../schemas/records';
+import {
+  Company,
+  type CompanyInput,
+  Opportunity,
+  type OpportunityInput,
+  Person,
+  type PersonInput,
+} from '../schemas/records';
 
 export interface Api {
   rest: RestClient;
   companies: RecordsApi<Company, CompanyInput>;
   people: RecordsApi<Person, PersonInput>;
+  opportunities: RecordsApi<Opportunity, OpportunityInput>;
+}
+
+export interface GraphQLApi {
+  companies: CrudApi<Company, CompanyInput>;
+  people: CrudApi<Person, PersonInput>;
+  opportunities: CrudApi<Opportunity, OpportunityInput>;
 }
 
 interface TestFixtures {
   /** REST API with the suite's API key (Admin role). */
   api: Api;
+  /** The same records through the GraphQL API (`/graphql`), with the same API key. */
+  gql: GraphQLApi;
   /** REST API without any credentials. */
   anonymous: RestClient;
   /** A unique email address for this test, read through Mailpit. */
@@ -66,6 +83,20 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
       rest,
       companies: recordsApi(rest, 'companies', Company),
       people: recordsApi(rest, 'people', Person),
+      opportunities: recordsApi(rest, 'opportunities', Opportunity),
+    });
+  },
+  gql: async ({ request, workspace }, use) => {
+    const key = workspace.apiKey;
+    await use({
+      companies: graphqlRecordsApi(request, key, { singular: 'company', type: 'Company' }, Company),
+      people: graphqlRecordsApi(request, key, { singular: 'person', type: 'Person' }, Person),
+      opportunities: graphqlRecordsApi(
+        request,
+        key,
+        { singular: 'opportunity', type: 'Opportunity' },
+        Opportunity,
+      ),
     });
   },
   anonymous: async ({ request }, use) => {

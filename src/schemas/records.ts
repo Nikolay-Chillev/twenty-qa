@@ -66,6 +66,23 @@ export const Person = RecordBase.extend({
 });
 export type Person = z.infer<typeof Person>;
 
+export const OPPORTUNITY_STAGES = ['NEW', 'SCREENING', 'MEETING', 'PROPOSAL', 'CUSTOMER'] as const;
+
+export const Opportunity = RecordBase.extend({
+  name: z.string(),
+  /** Money in millionths of the currency unit: 12.5 EUR is 12_500_000. */
+  amount: z.object({
+    amountMicros: z.number().nullable(),
+    currencyCode: z.string().nullable(),
+  }),
+  closeDate: z.iso.datetime().nullable(),
+  stage: z.enum(OPPORTUNITY_STAGES),
+  companyId: z.uuid().nullable(),
+  pointOfContactId: z.uuid().nullable(),
+  ownerId: z.uuid().nullable(),
+});
+export type Opportunity = z.infer<typeof Opportunity>;
+
 /** Fields a test may set when it creates or updates a company. */
 export interface CompanyInput {
   name?: string;
@@ -78,6 +95,17 @@ export interface CompanyInput {
 export interface PersonInput {
   name?: { firstName?: string; lastName?: string };
   emails?: { primaryEmail?: string; additionalEmails?: string[] };
+  phones?: { primaryPhoneNumber?: string; primaryPhoneCallingCode?: string };
   jobTitle?: string;
   companyId?: string | null;
+}
+
+/** Fields a test may set when it creates or updates an opportunity. */
+export interface OpportunityInput {
+  name?: string;
+  amount?: { amountMicros?: number | null; currencyCode?: string | null };
+  closeDate?: string | null;
+  stage?: (typeof OPPORTUNITY_STAGES)[number];
+  companyId?: string | null;
+  pointOfContactId?: string | null;
 }

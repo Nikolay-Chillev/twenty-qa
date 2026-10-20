@@ -23,14 +23,18 @@ export interface ListOptions {
   startingAfter?: string;
 }
 
-/** CRUD over one object of the REST API, e.g. `/rest/companies`. */
-export interface RecordsApi<Item, Input> {
+/** Create, read, update and delete one object's records, through REST or GraphQL. */
+export interface CrudApi<Item, Input> {
   create(input: Input): Promise<Item>;
   get(id: string): Promise<Item>;
-  list(options?: ListOptions): Promise<Page<Item>>;
   update(id: string, input: Input): Promise<Item>;
   /** Soft delete: the record goes to the trash and can be restored. */
   delete(id: string): Promise<void>;
+}
+
+/** CRUD and lists over one object of the REST API, e.g. `/rest/companies`. */
+export interface RecordsApi<Item, Input> extends CrudApi<Item, Input> {
+  list(options?: ListOptions): Promise<Page<Item>>;
 }
 
 // Twenty wraps each result in a key named after the operation, e.g.
