@@ -55,13 +55,13 @@ test.describe('records refuse invalid input', () => {
     expect(await expectRefusal(response)).toContain('phone number is invalid');
   });
 
-  for (const [number, problem] of [
-    ['088-ABC', 'letters after the digits, cut off without a word'],
-    ['12', 'too short for any Bulgarian number'],
-    ['08812345678901234', 'longer than the 15 digits E.164 allows'],
+  for (const [number, title] of [
+    ['088-ABC', 'a phone number with letters after the digits, cut off without a word'],
+    ['12', 'a phone number too short for any Bulgarian number'],
+    ['08812345678901234', 'a phone number longer than the 15 digits E.164 allows'],
   ] as const) {
     test.fail(
-      `a phone number with ${problem}`,
+      title,
       { annotation: { type: 'issue', description: `${ISSUES}/32` } },
       async ({ api }) => {
         const response = await api.rest.send('POST', '/rest/people', {
