@@ -31,9 +31,9 @@ Each risk gets a priority from its business impact. Priority decides the order o
 |---|---|---|---|
 | One workspace reads or changes another workspace's data | Data breach across customers, the worst failure for a SaaS product | **P1** | Checked by hand in [ADR 0001](adr/0001-run-twenty-with-multiple-workspaces.md) · API and UI tests planned (Access) |
 | Roles and permissions are not enforced | Users see or change data they should not; admins lose control of the workspace | **P1** | Planned (Access) |
-| Records are lost or saved wrongly (create, update, delete, restore) | Lost customer data and sales history | **P1** | API smoke: create, read and filter companies and people ✅ · full coverage planned (Records) |
+| Records are lost or saved wrongly (create, update, delete, restore) | Lost customer data and sales history | **P1** | API: create, read, update and delete companies, people and opportunities over REST and GraphQL; relations; validation; Cyrillic, markup and long values ✅ ([#30](https://github.com/Nikolay-Chillev/twenty-qa/issues/30), [#31](https://github.com/Nikolay-Chillev/twenty-qa/issues/31), [#32](https://github.com/Nikolay-Chillev/twenty-qa/issues/32) open) · lists, paging and restore planned (#25) |
 | A user cannot get in: sign-in, password reset, invitations | Team cannot work; support load | **P1** | Every role signs in in the setup project ✅ · email: password reset link ✅ · more planned (Access) |
-| API contracts change under integrations | Integrations and automations break silently | **P2** | Zod contracts for companies and people ✅ · more objects planned (Records) |
+| API contracts change under integrations | Integrations and automations break silently | **P2** | Zod contracts for companies, people and opportunities, checked on every REST and GraphQL response ✅ |
 | The data grid, kanban or record page misbehave | Users cannot manage their pipeline | **P2** | Planned (Records, Workspace) |
 | Import of contacts corrupts or drops data | Bad data from the first day | **P2** | Planned (Workspace) |
 | Changes to the data model break records, the API or the UI | Admin changes take the workspace down | **P2** | Planned (Workspace) |

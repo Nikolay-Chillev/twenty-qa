@@ -90,10 +90,13 @@ Tests import `test` and `expect` from [`src/fixtures`](src/fixtures/index.ts), w
 
 | Fixture | What it gives a test |
 |---|---|
-| `api` | REST clients for companies and people with the suite's API key; every response is checked against a Zod schema in [`src/schemas`](src/schemas/records.ts) |
+| `api` | REST clients for companies, people and opportunities with the suite's API key; every response is checked against a Zod schema in [`src/schemas`](src/schemas/records.ts) |
+| `gql` | The same records through GraphQL; each query asks for exactly the fields its schema checks |
 | `anonymous` | The REST API without credentials |
 | `mailbox` | A unique email address and `waitForEmail()`, read from Mailpit |
 | `adminToken`, `password` | For `/metadata` calls an API key cannot make, such as invitations |
+
+Test data comes from the factories in [`src/data/factories.ts`](src/data/factories.ts): Bulgarian people and companies in Cyrillic, unique per test. A bug found in Twenty is covered by a test marked `test.fail` with a link to its finding, so the suite stays green while the bug exists and reports an unexpected pass once it is fixed.
 
 GraphQL calls go through [`graphql()`](src/api/graphql.ts), which fails on GraphQL errors even when the HTTP status is 200. All HTTP traffic, Mailpit included, goes through Playwright's request context, so it shows up in traces.
 
