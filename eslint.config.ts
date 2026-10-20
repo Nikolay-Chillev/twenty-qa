@@ -27,5 +27,9 @@ export default defineConfig(
   {
     files: ['tests/**/*.ts'],
     extends: [playwright.configs['flat/recommended']],
+    rules: {
+      // Helpers named expectSomething() hold assertions, like expect() itself.
+      'playwright/expect-expect': ['warn', { assertFunctionPatterns: ['^expect[A-Z]'] }],
+    },
   },
 );
