@@ -10,6 +10,9 @@ export default defineConfig(
     'blob-report/',
     'allure-results/',
     'allure-report/',
+    'allure-history/',
+    // Plain JavaScript config, outside the TypeScript project the type-aware rules need.
+    'allurerc.mjs',
   ]),
   eslint.configs.recommended,
   // Type-aware rules catch what Playwright cannot: it strips types without checking

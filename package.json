@@ -13,7 +13,8 @@
     "typecheck": "tsc",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "prepare": "husky"
+    "prepare": "husky",
+    "report": "allure generate allure-results --config allurerc.mjs --open"
   },
   "lint-staged": {
     "*.ts": [
@@ -27,6 +28,7 @@
     "@faker-js/faker": "10.6.0",
     "@playwright/test": "1.64.1",
     "@types/node": "24.19.2",
+    "allure": "3.21.0",
     "allure-playwright": "3.13.0",
     "eslint": "10.13.0",
     "eslint-plugin-playwright": "2.12.1",
