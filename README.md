@@ -1,6 +1,7 @@
 # Twenty QA
 
 [![CI](https://github.com/Nikolay-Chillev/twenty-qa/actions/workflows/ci.yml/badge.svg)](https://github.com/Nikolay-Chillev/twenty-qa/actions/workflows/ci.yml)
+[![Allure report](https://img.shields.io/badge/Allure-report-orange)](https://nikolay-chillev.github.io/twenty-qa/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 Test automation for [Twenty](https://github.com/twentyhq/twenty), an open-source CRM, written in TypeScript with Playwright. The suite covers what a QA team at a B2B SaaS company would care about: the REST and GraphQL APIs and their contracts, roles and permissions, the data grid, kanban and editor in the UI, transactional emails, accessibility and performance. Everything runs against a disposable Docker environment and in CI.
@@ -60,6 +61,7 @@ npm test
 |---|---|
 | `npm test` | Runs all Playwright projects: unit, setup, API and the UI in Chromium, Firefox and WebKit |
 | `npm test -- --project=api --project=chromium` | Only some projects; the setup project runs first whenever a project needs it |
+| `npm run report` | Builds the Allure report from `allure-results` and opens it; local results add up across runs until the folder is deleted |
 | `npm run lint` | ESLint with type-aware rules, including Playwright's |
 | `npm run typecheck` | `tsc`; Playwright strips types without checking them |
 | `npm run format:check` | Prettier |
@@ -103,7 +105,7 @@ Every pull request and every push to `main` runs [`ci.yml`](.github/workflows/ci
 2. A fresh Twenty and Mailpit started with `scripts/start.sh`
 3. The unit, API and UI tests, the UI in Chromium, the setup project first
 
-The HTML report and the Allure results are kept as artifacts of the run, and the container logs too when something fails. In CI a failed test is retried once so the report can tell a flaky test from a broken one, but the run still fails. Changes to documentation only skip the tests. A single `CI passed` check sums up the run.
+The HTML report and the Allure results are kept as artifacts of the run, and the container logs too when something fails. After every run on `main`, the [Allure report](https://nikolay-chillev.github.io/twenty-qa/) is published to GitHub Pages with the history of earlier runs, so trends and flaky tests show across runs. In CI a failed test is retried once so the report can tell a flaky test from a broken one, but the run still fails. Changes to documentation only skip the tests. A single `CI passed` check sums up the run.
 
 ## Documentation
 

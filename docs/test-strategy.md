@@ -111,6 +111,6 @@ v1.0 is released when the P1 and P2 risks above have API coverage, P1 journeys h
 
 ## Reporting
 
-- **Playwright HTML report** and **Allure results** kept as artifacts of every CI run for 14 days; a published Allure report with history is planned (#9)
+- **[Allure report](https://nikolay-chillev.github.io/twenty-qa/)** published after every run on `main`, with trends across runs; every CI run also keeps the Playwright HTML report and the raw Allure results for 14 days
 - **Findings** in Twenty or the environment: GitHub issues labelled `finding`, summarised in [findings.md](findings.md)
 - **Decisions**: [architecture decision records](adr/)
