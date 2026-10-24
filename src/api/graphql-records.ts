@@ -83,5 +83,24 @@ export function graphqlRecordsApi<Item extends z.ZodObject, Input>(
         data: z.object({ [key]: z.object({ id: z.uuid(), deletedAt: z.iso.datetime() }) }),
       });
     },
+    restore: async (id) => {
+      const key = `restore${type}`;
+      const data = await graphql(request, '/graphql', {
+        query: `mutation($id: UUID!) { ${key}(id: $id) { ${fields} } }`,
+        variables: { id },
+        token,
+        data: result(key),
+      });
+      return data[key] as z.output<Item>;
+    },
+    destroy: async (id) => {
+      const key = `destroy${type}`;
+      await graphql(request, '/graphql', {
+        query: `mutation($id: UUID!) { ${key}(id: $id) { id } }`,
+        variables: { id },
+        token,
+        data: z.object({ [key]: z.object({ id: z.uuid() }) }),
+      });
+    },
   };
 }
