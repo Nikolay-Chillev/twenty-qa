@@ -85,8 +85,8 @@ test.describe('saved views', () => {
     await companies.views.filter('Name', tag);
     await companies.views.sort('Name', 'Descending');
 
+    views.removeAfterTest('company', `Изглед ${tag}`);
     const id = await companies.views.saveAsNewView(`Изглед ${tag}`);
-    views.removeAfterTest(id);
 
     expect(await views.get(id)).toMatchObject({
       name: `Изглед ${tag}`,

@@ -80,6 +80,7 @@ export interface NewView {
 /** Saved views through the metadata API, with the suite's API key. */
 export class ViewsApi {
   private readonly toRemove = new Set<string>();
+  private readonly namedToRemove: { object: string; name: string }[] = [];
 
   constructor(
     private readonly request: APIRequestContext,
@@ -161,9 +162,13 @@ export class ViewsApi {
     return created;
   }
 
-  /** Removes a view when the test ends: for the views a test saves through the UI. */
-  removeAfterTest(id: string): void {
-    this.toRemove.add(id);
+  /**
+   * Removes the views with this name when the test ends: for a view a test saves through
+   * the UI. Called before saving, so the view goes even if the test fails right after
+   * Twenty created it; the name must be unique to the test.
+   */
+  removeAfterTest(object: string, name: string): void {
+    this.namedToRemove.push({ object, name });
   }
 
   async destroy(id: string): Promise<void> {
@@ -176,6 +181,11 @@ export class ViewsApi {
 
   /** Removes the views this test created; the `views` fixture calls it when the test ends. */
   async removeAll(): Promise<void> {
+    for (const { object, name } of this.namedToRemove) {
+      for (const view of await this.list(object)) {
+        if (view.name === name) this.toRemove.add(view.id);
+      }
+    }
     for (const id of this.toRemove) {
       try {
         await this.destroy(id);
@@ -185,6 +195,7 @@ export class ViewsApi {
       }
     }
     this.toRemove.clear();
+    this.namedToRemove.length = 0;
   }
 
   private async object(nameSingular: string): Promise<ObjectMetadata> {
