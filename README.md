@@ -13,7 +13,7 @@ Test automation for [Twenty](https://github.com/twentyhq/twenty), an open-source
 
 | Service | Image | URL |
 |---|---|---|
-| Twenty 2.48.0 (server and worker) | [twentycrm/twenty](https://hub.docker.com/r/twentycrm/twenty) | API: http://localhost:3000<br>Test workspace: http://qa.localhost:3000 |
+| Twenty 2.50.1 (server and worker) | [twentycrm/twenty](https://hub.docker.com/r/twentycrm/twenty) | API: http://localhost:3000<br>Test workspace: http://qa.localhost:3000 |
 | Postgres 16 and Redis 8 | official images | internal only |
 | Mailpit (catches all outgoing email) | [axllent/mailpit](https://github.com/axllent/mailpit) | http://localhost:8026 |
 

@@ -43,7 +43,7 @@ export class ViewBar {
     if (direction === 'Descending') {
       const directions = this.page.getByRole('dialog', { name: 'Direction' });
       await sort.getByRole('button', { name: 'Ascending' }).click();
-      await directions.getByRole('button', { name: 'Descending' }).click();
+      await directions.getByRole('option', { name: 'Descending' }).click();
       // A field clicked while the direction menu is still closing is lost.
       await expect(directions).toBeHidden();
       await expect(sort.getByRole('button', { name: 'Descending' })).toBeVisible();

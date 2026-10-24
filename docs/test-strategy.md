@@ -4,7 +4,7 @@ How this project decides what to test, at which level, and when a change is good
 
 ## System under test
 
-[Twenty](https://github.com/twentyhq/twenty) 2.48, an open-source CRM, running in Docker with several workspaces, each on its own subdomain, as on Twenty's cloud ([ADR 0001](adr/0001-run-twenty-with-multiple-workspaces.md)). The scenarios follow a sales team using a B2B SaaS product: companies, people and opportunities, a team with different roles, and an administrator who manages access and the data model.
+[Twenty](https://github.com/twentyhq/twenty) 2.50, an open-source CRM, running in Docker with several workspaces, each on its own subdomain, as on Twenty's cloud ([ADR 0001](adr/0001-run-twenty-with-multiple-workspaces.md)). The scenarios follow a sales team using a B2B SaaS product: companies, people and opportunities, a team with different roles, and an administrator who manages access and the data model.
 
 **In scope**
 - Records (companies, people, opportunities, tasks, notes) through the REST and GraphQL APIs and the UI
