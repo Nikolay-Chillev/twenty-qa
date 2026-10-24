@@ -16,6 +16,9 @@ if (ci) reporters.push(['github']);
 export default defineConfig({
   testDir: './tests',
   fullyParallel: true,
+  // Twenty serves its whole front end (about 700 files for every fresh browser context)
+  // from one Node process; more browsers than this at once only slow each other down.
+  workers: ci ? 2 : 4,
   forbidOnly: ci,
   // In CI a failed test runs once more, so the report tells a flaky test from a broken
   // one; the run still fails, because a flaky test is a bug to fix, not to hide.
@@ -39,9 +42,11 @@ export default defineConfig({
     { name: 'setup', testDir: './tests/setup', testMatch: /.*\.setup\.ts/ },
     { name: 'api', testDir: './tests/api', dependencies: ['setup'] },
     // UI tests run as the admin unless they pick another role with test.use().
+    // A page load alone may take up to 30 s (src/ui/record-table.ts), so UI tests get 60.
     {
       name: 'chromium',
       testDir: './tests/ui',
+      timeout: 60_000,
       use: {
         ...devices['Desktop Chrome'],
         baseURL: WORKSPACE_URL,
@@ -52,6 +57,7 @@ export default defineConfig({
     {
       name: 'firefox',
       testDir: './tests/ui',
+      timeout: 60_000,
       use: {
         ...devices['Desktop Firefox'],
         baseURL: WORKSPACE_URL,
@@ -62,6 +68,7 @@ export default defineConfig({
     {
       name: 'webkit',
       testDir: './tests/ui',
+      timeout: 60_000,
       use: {
         ...devices['Desktop Safari'],
         baseURL: WORKSPACE_URL,

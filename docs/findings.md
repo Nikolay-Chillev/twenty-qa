@@ -42,6 +42,7 @@ Seen on 2.48.0. Updating companies by filter (`PATCH /rest/companies?filter=…`
 ## To investigate
 
 - **Permission errors are 400, not 403.** An API key whose role may only read gets `400 PERMISSION_DENIED "Entity performing the request does not have permission"` when it updates a company or reads a revoked object. To be confirmed in the permission tests (Access milestone) before it becomes a finding.
+- **The record table has no table semantics.** Rows and cells are plain elements without `table`, `row` or `cell` roles, and column headers are buttons, so a screen reader cannot tell which column a value belongs to. To be checked with the accessibility scans (Quality milestone).
 - **Negative deal amounts.** An opportunity of −5 EUR is accepted over REST. A credit or a refund could be a reason, but nothing in the app suggests deals are meant to be negative; to be checked with how the pipeline sums amounts.
 - **The schema and the server disagree on the workspace name.** `SignUpInNewWorkspaceInput.displayName` is optional in the GraphQL schema, but `signUpInNewWorkspace` without it fails with "Workspace name is required". Minor: the app always sends a name.
 
