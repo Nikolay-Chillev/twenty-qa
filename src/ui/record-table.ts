@@ -17,20 +17,34 @@ export class RecordTable {
     return this.page.getByTestId(`row-id-${id}`);
   }
 
-  /** Every row the table shows, top to bottom. */
+  /** Every row the table shows, in the page's order (not always the order on screen). */
   get rows(): Locator {
     return this.page.locator('[data-testid^="row-id-"]');
   }
 
-  /** The ids of the records the table shows, top to bottom. */
+  /**
+   * The ids of the records the table shows, top to bottom as on screen. Since 2.50,
+   * a sort moves the rows on screen without moving them in the page, so the page's
+   * order is not the order a user reads.
+   */
   async ids(): Promise<string[]> {
     // Read in one go in the page, so rows drawn again meanwhile cannot mix two renders.
     // The suite has no DOM types, hence the shape of the elements spelled out.
-    const testIds = await this.rows.evaluateAll(
-      (rows: { getAttribute: (name: string) => string | null }[]) =>
-        rows.map((row) => row.getAttribute('data-testid') ?? ''),
+    const rows = await this.rows.evaluateAll(
+      (
+        elements: {
+          getAttribute: (name: string) => string | null;
+          getBoundingClientRect: () => { top: number };
+        }[],
+      ) =>
+        elements.map((row) => ({
+          testId: row.getAttribute('data-testid') ?? '',
+          top: row.getBoundingClientRect().top,
+        })),
     );
-    return testIds.map((testId) => testId.replace('row-id-', ''));
+    return rows
+      .sort((first, second) => first.top - second.top)
+      .map((row) => row.testId.replace('row-id-', ''));
   }
 
   /** The link on a record's name, which opens its page. */
@@ -87,6 +101,9 @@ export class RecordTable {
     const field = this.page.locator(':focus');
     await expect(field).toBeEditable();
     await field.fill(value);
+    // Enter saves what the field holds at that moment; under load the field can take
+    // a moment to show what was typed.
+    await expect(field).toHaveValue(value);
     await this.page.keyboard.press('Enter');
   }
 }
