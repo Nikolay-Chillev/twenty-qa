@@ -95,8 +95,10 @@ Tests import `test` and `expect` from [`src/fixtures`](src/fixtures/index.ts), w
 | `anonymous` | The REST API without credentials |
 | `mailbox` | A unique email address and `waitForEmail()`, read from Mailpit |
 | `adminToken`, `password` | For `/metadata` calls an API key cannot make, such as invitations |
+| `views` | Saved views of the tables over `/metadata`: finds an object's own view, creates a view with filters, reads what a view saved; the views a test creates are removed after it |
+| `memberPage` | A second browser signed in as the member, next to the admin's `page` |
 
-UI tests use the components in [`src/ui`](src/ui): the sidebar, the record table (a row by its record id, a cell by the column header above it, since Twenty's table has no table roles) and the record page. Records open in Twenty's side panel. Pages get 30 seconds to load and UI tests 60, as every fresh browser loads the whole front end; locally the suite runs on four workers for the same reason.
+UI tests use the components in [`src/ui`](src/ui): the sidebar, the record table (a row by its record id, a cell by the column header above it, since Twenty's table has no table roles), the bar above it with filters, sorts and saved views, and the record page. Records open in Twenty's side panel. Tests that work with views open the table on the object's own view by its id: Twenty opens `/objects/companies` on the first view in the list, and a newly saved view goes first. Pages get 30 seconds to load and UI tests 60, as every fresh browser loads the whole front end; locally the suite runs on four workers for the same reason.
 
 Test data comes from the factories in [`src/data/factories.ts`](src/data/factories.ts): Bulgarian people and companies in Cyrillic, unique per test. A bug found in Twenty is covered by a test marked `test.fail` with a link to its finding, so the suite stays green while the bug exists and reports an unexpected pass once it is fixed.
 
