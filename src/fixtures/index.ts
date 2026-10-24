@@ -4,9 +4,17 @@ import { graphqlRecordsApi } from '../api/graphql-records';
 import { type CrudApi, recordsApi, type RecordsApi } from '../api/records';
 import { RestClient } from '../api/rest';
 import { ViewsApi } from '../api/views';
-import { storageStateOf, WORKSPACE_URL } from '../auth/users';
-import { readSavedWorkspace, type SavedWorkspace, signInAdmin } from '../auth/workspace';
+import { storageStateOf, type TestUser, WORKSPACE_URL } from '../auth/users';
+import {
+  memberIdOf,
+  readSavedWorkspace,
+  removeFromWorkspace,
+  type SavedWorkspace,
+  signInAdmin,
+  signInMember,
+} from '../auth/workspace';
 import { config } from '../config';
+import { personName } from '../data/factories';
 import { Mailbox } from '../mail/mailbox';
 import { Mailpit } from '../mail/mailpit';
 import {
@@ -44,6 +52,11 @@ interface TestFixtures {
   views: ViewsApi;
   /** A second browser, signed in as the member, next to the admin's `page`. */
   memberPage: Page;
+  /**
+   * A member made for this test, with the mailbox's address and the suite's password,
+   * so the test may sign it out or change its password; taken out of the workspace after.
+   */
+  newMember: TestUser;
 }
 
 interface WorkerFixtures {
@@ -123,6 +136,15 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
     });
     await use(await context.newPage());
     await context.close();
+  },
+  newMember: async ({ request, mailbox, adminToken, password }, use) => {
+    const user: TestUser = { role: 'member', email: mailbox.address, ...personName() };
+    const memberId = await memberIdOf(
+      request,
+      await signInMember(request, password, adminToken, user),
+    );
+    await use(user);
+    await removeFromWorkspace(request, adminToken, memberId);
   },
 });
 
