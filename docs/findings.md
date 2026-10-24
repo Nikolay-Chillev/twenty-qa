@@ -11,6 +11,7 @@ Defects and risks found while testing Twenty and its environment. Each finding i
 | [#31](https://github.com/Nikolay-Chillev/twenty-qa/issues/31) | Database errors reach API clients with table, constraint and index names | Minor | Product | Open, covered by expected failures |
 | [#32](https://github.com/Nikolay-Chillev/twenty-qa/issues/32) | Phone numbers of any length are saved, and letters after the digits are cut off | Minor | Product | Open, reported upstream as [twentyhq/twenty#28764](https://github.com/twentyhq/twenty/issues/28764); covered by expected failures |
 | [#34](https://github.com/Nikolay-Chillev/twenty-qa/issues/34) | Deleting by filter over REST has no limit and is permanent by default | Major | Product | Open, reported upstream as [twentyhq/twenty#28762](https://github.com/twentyhq/twenty/issues/28762); covered by an expected failure |
+| [#54](https://github.com/Nikolay-Chillev/twenty-qa/issues/54) | A removed invitation still lets the person join while the invite link is on | Major | Product | Open, covered by an expected failure |
 
 ## Details
 
@@ -38,8 +39,27 @@ Seen on 2.48.0 and again on 2.50.0. A phone number is refused only when it has n
 
 Seen on 2.48.0 and again on 2.50.0. Updating companies by filter (`PATCH /rest/companies?filter=…`) refuses more than 200 matches ("Cannot update more than 200 records at once"), and a batch create refuses more than 200 records. Deleting by filter has no such limit: a filter that matched 311 companies deleted all of them in one request. REST deletes are also permanent unless `soft_delete=true` is sent; the OpenAPI document says so, but the app and GraphQL's `deleteCompany` move records to the trash, so the same word does two different things. The records deleted that way are not in the trash and cannot be restored. This suite's REST client sends `soft_delete=true` for a delete and leaves permanent deletes to `destroy()`. Reported upstream as [twentyhq/twenty#28762](https://github.com/twentyhq/twenty/issues/28762), with steps that delete 300 companies in one request.
 
+### #54 A removed invitation still lets the person join while the invite link is on
+
+Seen on 2.50.1. Every invitation email links to `…/invite/<workspace invite hash>?inviteToken=…&email=…`.
+
+What happens with "Invite by link" left on, as a new workspace has it:
+- An admin removes the invitation, and it leaves the list of pending ones.
+- The person can still open the link, sign up and become a Member.
+- The same link lets anyone else join too, since the hash alone is the workspace's public invite link.
+
+With "Invite by link" turned off:
+- The removed invitation is refused ("Public invite link is disabled for this workspace").
+- A valid invitation still works.
+
+So removing an invitation only takes effect once the public link is turned off as well, and nothing on the members page says so. An admin who removes an invitation sent to the wrong person, or to someone who has left, leaves the door open.
+
 ## To investigate
 
+- **The sign-in and invitation pages sometimes stay on a loader.** It happened twice in about 150 loads on 2.50.1, once in Chromium and once in Firefox, and could not be reproduced on demand.
+  - The page showed its title ("Welcome, QA Workspace.", "Join QA Workspace team") and a small empty placeholder where the form goes, for 30 seconds.
+  - Every request had already been answered, and the console showed no error.
+  - To be watched in the nightly runs.
 - **After a sort, the page keeps the old reading order.** Since 2.50 a sort moves the table's rows on screen, but not in the page, until the view is saved or the page is reloaded. A screen reader follows the page, so it may read a sorted table in its old order (WCAG 1.3.2, meaningful sequence). To be checked with a screen reader and the accessibility scans (Quality milestone); see the item on #52 below.
 
 - **Permission errors are 400, not 403.** An API key whose role may only read gets `400 PERMISSION_DENIED "Entity performing the request does not have permission"` when it updates a company or reads a revoked object. To be confirmed in the permission tests (Access milestone) before it becomes a finding.
