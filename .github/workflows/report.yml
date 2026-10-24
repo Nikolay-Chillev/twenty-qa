@@ -3,6 +3,11 @@ name: Allure report
 # Builds one Allure report from every allure-results artifact of the calling run and
 # publishes it to GitHub Pages with the history of earlier runs. Called by CI (on main)
 # and by Nightly, so both add to the same report and history.
+#
+# Callers run it in the `pages` concurrency group: two reports built at once would
+# both start from the same history, and the second to publish would drop the first
+# run from it. The group is set on the calling job only: set on a job in here too,
+# that job would wait for its own caller to finish.
 on:
   workflow_call:
 
@@ -67,10 +72,6 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deploy.outputs.page_url }}
-    # CI and Nightly publish to the same site; one deployment at a time, none dropped.
-    concurrency:
-      group: pages
-      cancel-in-progress: false
     steps:
       - id: deploy
         uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1

@@ -122,6 +122,10 @@ jobs:
     needs: test
     if: ${{ !cancelled() && needs.test.result != 'skipped' && github.event_name != 'pull_request' && github.ref == 'refs/heads/main' }}
     uses: ./.github/workflows/report.yml
+    # Shared with Nightly: one report at a time is built from the history and published.
+    concurrency:
+      group: pages
+      cancel-in-progress: false
     permissions:
       contents: read
       pages: write

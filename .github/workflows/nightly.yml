@@ -29,15 +29,20 @@ jobs:
       # A failure in one browser must not cancel the others.
       fail-fast: false
       matrix:
+        # The setup project signs the users in with Chromium whatever the browser under
+        # test, so every job installs Chromium too.
         include:
           - browser: chromium
             label: Chromium
+            install: chromium
             projects: --project=unit --project=api --project=chromium
           - browser: firefox
             label: Firefox
+            install: chromium firefox
             projects: --project=firefox
           - browser: webkit
             label: WebKit
+            install: chromium webkit
             projects: --project=webkit
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -54,7 +59,7 @@ jobs:
       - run: npm ci
 
       - name: Install ${{ matrix.label }}
-        run: npx playwright install --with-deps ${{ matrix.browser }}
+        run: npx playwright install --with-deps ${{ matrix.install }}
 
       # The setup project runs first in every job, as each UI project depends on it.
       - name: Run tests
@@ -98,6 +103,10 @@ jobs:
     needs: test
     if: ${{ !cancelled() && github.event_name != 'pull_request' && github.ref == 'refs/heads/main' }}
     uses: ./.github/workflows/report.yml
+    # Shared with CI: one report at a time is built from the history and published.
+    concurrency:
+      group: pages
+      cancel-in-progress: false
     permissions:
       contents: read
       pages: write
