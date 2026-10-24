@@ -4,6 +4,7 @@ import { graphqlRecordsApi } from '../api/graphql-records';
 import { type CrudApi, recordsApi, type RecordsApi } from '../api/records';
 import { RestClient } from '../api/rest';
 import { ViewsApi } from '../api/views';
+import { listInvitations, membershipOf, removeInvitation } from '../auth/invitations';
 import { storageStateOf, type TestUser, WORKSPACE_URL } from '../auth/users';
 import {
   memberIdOf,
@@ -57,6 +58,13 @@ interface TestFixtures {
    * so the test may sign it out or change its password; taken out of the workspace after.
    */
   newMember: TestUser;
+  /** A second browser with no session, for someone who has no account yet. */
+  guestPage: Page;
+  /**
+   * Someone to invite: the test's mailbox. After the test, their pending invitations
+   * are removed, and so is the member they became if they joined.
+   */
+  invitee: Mailbox;
 }
 
 interface WorkerFixtures {
@@ -145,6 +153,26 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
     );
     await use(user);
     await removeFromWorkspace(request, adminToken, memberId);
+  },
+  guestPage: async ({ browser }, use) => {
+    // An empty state of its own: a context made in a test otherwise takes the
+    // project's, which signs it in as the admin.
+    const context = await browser.newContext({
+      baseURL: WORKSPACE_URL,
+      storageState: { cookies: [], origins: [] },
+    });
+    await use(await context.newPage());
+    await context.close();
+  },
+  invitee: async ({ request, mailbox, adminToken }, use) => {
+    await use(mailbox);
+    for (const invitation of await listInvitations(request, adminToken)) {
+      if (invitation.email === mailbox.address) {
+        await removeInvitation(request, adminToken, invitation.id);
+      }
+    }
+    const membership = await membershipOf(request, adminToken, mailbox.address);
+    if (membership) await removeFromWorkspace(request, adminToken, membership.memberId);
   },
 });
 
