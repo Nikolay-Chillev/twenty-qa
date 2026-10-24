@@ -6,18 +6,18 @@ Defects and risks found while testing Twenty and its environment. Each finding i
 
 | # | Finding | Severity | Source | Status |
 |---|---|---|---|---|
-| [#12](https://github.com/Nikolay-Chillev/twenty-qa/issues/12) | `/healthz` reports OK while the database is down | Minor | Product | Open; related upstream reports [twentyhq/twenty#24432](https://github.com/twentyhq/twenty/issues/24432) and [#26895](https://github.com/twentyhq/twenty/issues/26895) are closed. Worked around by the server health check |
+| [#12](https://github.com/Nikolay-Chillev/twenty-qa/issues/12) | `/healthz` reports OK while the database is down | Minor | Product | Open, reported upstream as [twentyhq/twenty#28763](https://github.com/twentyhq/twenty/issues/28763); worked around by the server health check |
 | [#17](https://github.com/Nikolay-Chillev/twenty-qa/issues/17) | A request without a token gets 403, an invalid token 401 | Minor | Product | Open, covered by the API smoke tests |
 | [#30](https://github.com/Nikolay-Chillev/twenty-qa/issues/30) | An amount with a currency code that does not exist is saved, and the app hides it | Major | Product | Open, reported upstream as [twentyhq/twenty#28761](https://github.com/twentyhq/twenty/issues/28761); covered by an expected failure |
 | [#31](https://github.com/Nikolay-Chillev/twenty-qa/issues/31) | Database errors reach API clients with table, constraint and index names | Minor | Product | Open, covered by expected failures |
-| [#32](https://github.com/Nikolay-Chillev/twenty-qa/issues/32) | Phone numbers of any length are saved, and letters after the digits are cut off | Minor | Product | Open, covered by expected failures |
-| [#34](https://github.com/Nikolay-Chillev/twenty-qa/issues/34) | Deleting by filter over REST has no limit and is permanent by default | Major | Product | Open, covered by an expected failure |
+| [#32](https://github.com/Nikolay-Chillev/twenty-qa/issues/32) | Phone numbers of any length are saved, and letters after the digits are cut off | Minor | Product | Open, reported upstream as [twentyhq/twenty#28764](https://github.com/twentyhq/twenty/issues/28764); covered by expected failures |
+| [#34](https://github.com/Nikolay-Chillev/twenty-qa/issues/34) | Deleting by filter over REST has no limit and is permanent by default | Major | Product | Open, reported upstream as [twentyhq/twenty#28762](https://github.com/twentyhq/twenty/issues/28762); covered by an expected failure |
 
 ## Details
 
 ### #12 `/healthz` reports OK while the database is down
 
-Seen on 2.48.0 and again on 2.50.0. With the database container stopped, `GET /healthz` still answers `200 {"status":"ok","info":{},"error":{},"details":{}}` while API calls fail; on a fresh start of 2.48 it also turned green before the API could serve requests. Twenty's own compose file uses `/healthz` as the server's health check and makes the worker wait for it, so an orchestrator sees a healthy server that cannot serve anything. Two upstream issues describe related symptoms (green during first-boot migrations, green while the server hangs); both are closed, but the endpoint still checks nothing in 2.50. This environment checks readiness with a GraphQL query that needs the database ([ADR 0005](adr/0005-adjust-the-environment-for-automated-runs.md)).
+Seen on 2.48.0 and again on 2.50.0. With the database container stopped, `GET /healthz` still answers `200 {"status":"ok","info":{},"error":{},"details":{}}` while API calls fail; on a fresh start of 2.48 it also turned green before the API could serve requests. Twenty's own compose file uses `/healthz` as the server's health check and makes the worker wait for it, so an orchestrator sees a healthy server that cannot serve anything. Two upstream issues describe related symptoms (green during first-boot migrations, green while the server hangs); both are closed, but the endpoint still checks nothing in 2.50: its controller runs a health check with an empty list of indicators, although database and Redis indicators exist for the admin panel. Twenty's Helm chart uses the endpoint for its startup, liveness and readiness probes too. This environment checks readiness with a GraphQL query that needs the database ([ADR 0005](adr/0005-adjust-the-environment-for-automated-runs.md)). Reported upstream as [twentyhq/twenty#28763](https://github.com/twentyhq/twenty/issues/28763), with links to the two closed reports ([#24432](https://github.com/twentyhq/twenty/issues/24432), [#26895](https://github.com/twentyhq/twenty/issues/26895)).
 
 ### #17 A request without a token gets 403, an invalid token 401
 
@@ -37,11 +37,11 @@ Seen on 2.48.0 and again on 2.50.0. A person linked to a company that does not e
 
 ### #32 Phone numbers of any length are saved, and letters after the digits are cut off
 
-Seen on 2.48.0 and again on 2.50.0. A phone number is refused only when it has no digit at all (`abc`, `телефон`). With the Bulgarian calling code, `12` and `888` are saved, `08812345678901234` is saved with 16 digits (E.164 allows 15), and `088-ABC` is saved as `088` with the rest dropped and no warning. `+359 88 123 4567` is parsed correctly into `881234567`.
+Seen on 2.48.0 and again on 2.50.0. A phone number is refused only when it has no digit at all (`abc`, `телефон`). With the Bulgarian calling code, `12` and `888` are saved, `08812345678901234` is saved with 16 digits (E.164 allows 15), and `088-ABC` is saved as `088` with the rest dropped and no warning. `+359 88 123 4567` is parsed correctly into `881234567`. Reported upstream as [twentyhq/twenty#28764](https://github.com/twentyhq/twenty/issues/28764).
 
 ### #34 Deleting by filter over REST has no limit and is permanent by default
 
-Seen on 2.48.0 and again on 2.50.0. Updating companies by filter (`PATCH /rest/companies?filter=…`) refuses more than 200 matches ("Cannot update more than 200 records at once"), and a batch create refuses more than 200 records. Deleting by filter has no such limit: a filter that matched 311 companies deleted all of them in one request. REST deletes are also permanent unless `soft_delete=true` is sent; the OpenAPI document says so, but the app and GraphQL's `deleteCompany` move records to the trash, so the same word does two different things. The records deleted that way are not in the trash and cannot be restored. This suite's REST client sends `soft_delete=true` for a delete and leaves permanent deletes to `destroy()`.
+Seen on 2.48.0 and again on 2.50.0. Updating companies by filter (`PATCH /rest/companies?filter=…`) refuses more than 200 matches ("Cannot update more than 200 records at once"), and a batch create refuses more than 200 records. Deleting by filter has no such limit: a filter that matched 311 companies deleted all of them in one request. REST deletes are also permanent unless `soft_delete=true` is sent; the OpenAPI document says so, but the app and GraphQL's `deleteCompany` move records to the trash, so the same word does two different things. The records deleted that way are not in the trash and cannot be restored. This suite's REST client sends `soft_delete=true` for a delete and leaves permanent deletes to `destroy()`. Reported upstream as [twentyhq/twenty#28762](https://github.com/twentyhq/twenty/issues/28762), with steps that delete 300 companies in one request.
 
 ## To investigate
 
