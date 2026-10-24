@@ -1,5 +1,7 @@
 import { expect, type Locator, type Page } from '@playwright/test';
 
+import { ViewBar } from './view-bar';
+
 /** How long a page of the app may take to render after a navigation. */
 export const PAGE_LOAD = 30_000;
 
@@ -13,6 +15,22 @@ export class RecordTable {
 
   row(id: string): Locator {
     return this.page.getByTestId(`row-id-${id}`);
+  }
+
+  /** Every row the table shows, top to bottom. */
+  get rows(): Locator {
+    return this.page.locator('[data-testid^="row-id-"]');
+  }
+
+  /** The ids of the records the table shows, top to bottom. */
+  async ids(): Promise<string[]> {
+    // Read in one go in the page, so rows drawn again meanwhile cannot mix two renders.
+    // The suite has no DOM types, hence the shape of the elements spelled out.
+    const testIds = await this.rows.evaluateAll(
+      (rows: { getAttribute: (name: string) => string | null }[]) =>
+        rows.map((row) => row.getAttribute('data-testid') ?? ''),
+    );
+    return testIds.map((testId) => testId.replace('row-id-', ''));
   }
 
   /** The link on a record's name, which opens its page. */
@@ -73,12 +91,14 @@ export const PEOPLE: ObjectNames = { plural: 'people', label: 'Person' };
 /** The list of an object's records, e.g. /objects/companies. */
 export class RecordIndexPage {
   readonly table: RecordTable;
+  readonly views: ViewBar;
 
   constructor(
     readonly page: Page,
     private readonly object: ObjectNames,
   ) {
     this.table = new RecordTable(page);
+    this.views = new ViewBar(page);
   }
 
   /**
@@ -86,7 +106,17 @@ export class RecordIndexPage {
    * through Twenty's URL filter, so a test sees its own records among everyone else's.
    */
   async open(nameContains?: string): Promise<this> {
-    const query = nameContains ? `?filter[name][CONTAINS]=${encodeURIComponent(nameContains)}` : '';
+    return this.goto(
+      nameContains ? `?filter[name][CONTAINS]=${encodeURIComponent(nameContains)}` : '',
+    );
+  }
+
+  /** Opens the table on a saved view, e.g. the object's own view from `ViewsApi.index`. */
+  async openView(viewId: string): Promise<this> {
+    return this.goto(`?viewId=${viewId}`);
+  }
+
+  private async goto(query: string): Promise<this> {
     await this.page.goto(`/objects/${this.object.plural}${query}`);
     // The first render loads the front end and the records: a page load, not an assertion.
     await expect(this.page.getByRole('checkbox', { name: 'Select all rows' })).toBeVisible({
