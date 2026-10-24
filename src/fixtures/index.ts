@@ -1,8 +1,10 @@
-import { test as base } from '@playwright/test';
+import { test as base, type Page } from '@playwright/test';
 
 import { graphqlRecordsApi } from '../api/graphql-records';
 import { type CrudApi, recordsApi, type RecordsApi } from '../api/records';
 import { RestClient } from '../api/rest';
+import { ViewsApi } from '../api/views';
+import { storageStateOf, WORKSPACE_URL } from '../auth/users';
 import { readSavedWorkspace, type SavedWorkspace, signInAdmin } from '../auth/workspace';
 import { config } from '../config';
 import { Mailbox } from '../mail/mailbox';
@@ -38,6 +40,10 @@ interface TestFixtures {
   anonymous: RestClient;
   /** A unique email address for this test, read through Mailpit. */
   mailbox: Mailbox;
+  /** Saved views of the tables, with the same API key; the views a test makes go after it. */
+  views: ViewsApi;
+  /** A second browser, signed in as the member, next to the admin's `page`. */
+  memberPage: Page;
 }
 
 interface WorkerFixtures {
@@ -104,6 +110,19 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
   },
   mailbox: async ({ request }, use) => {
     await use(new Mailbox(new Mailpit(request, config.MAILPIT_URL)));
+  },
+  views: async ({ request, workspace }, use) => {
+    const views = new ViewsApi(request, workspace.apiKey);
+    await use(views);
+    await views.removeAll();
+  },
+  memberPage: async ({ browser }, use) => {
+    const context = await browser.newContext({
+      baseURL: WORKSPACE_URL,
+      storageState: storageStateOf('member'),
+    });
+    await use(await context.newPage());
+    await context.close();
   },
 });
 
