@@ -55,6 +55,69 @@ export class SignInPage {
   }
 }
 
+/**
+ * The page an invitation link opens: the welcome page's form under "Join <workspace>
+ * team", with the invited address filled in. Signing up leads on to the profile form.
+ */
+export class InvitationPage {
+  readonly form: SignInPage;
+  readonly firstName: Locator;
+
+  constructor(readonly page: Page) {
+    this.form = new SignInPage(page);
+    this.firstName = page.getByRole('textbox', { name: 'First Name' });
+  }
+
+  heading(workspace: string): Locator {
+    return this.page.getByText(`Join ${workspace} team`, { exact: true });
+  }
+
+  async open(link: string): Promise<this> {
+    await this.page.goto(link);
+    await expect(this.form.email).toHaveValue(/@/, { timeout: PAGE_LOAD });
+    return this;
+  }
+
+  /** Signs up with the invited address and a password. */
+  async signUp(password: string): Promise<void> {
+    await this.page.getByRole('button', { name: 'Continue', exact: true }).click();
+    await this.form.password.fill(password);
+    await this.form.signUpButton.click();
+  }
+
+  /**
+   * Tries a link that may no longer be valid, as its invitee would: signs up if the page
+   * offers the form for the invited address, then waits for the app's answer, a notice
+   * or the profile form. A link refused outright, with a notice or by sending the user
+   * to the sign-in page, ends at the first step.
+   */
+  async tryToJoin(link: string, password: string): Promise<void> {
+    await this.page.goto(link);
+    const answer = this.page.getByRole('status').or(this.firstName).first();
+    const offered = async () => (await this.form.email.inputValue().catch(() => '')).includes('@');
+    await expect
+      .poll(
+        async () =>
+          (await offered()) || (await answer.isVisible()) || this.page.url().includes('/welcome'),
+        { message: 'the invitation form or a refusal', timeout: PAGE_LOAD },
+      )
+      .toBe(true);
+    if ((await offered()) && !(await answer.isVisible())) {
+      await this.signUp(password);
+      await expect(answer).toBeVisible({ timeout: PAGE_LOAD });
+    }
+  }
+
+  /** Signs up, then fills in the name Twenty asks a new member for. */
+  async join(password: string, name: { firstName: string; lastName: string }): Promise<void> {
+    await this.signUp(password);
+    await expect(this.firstName).toBeVisible({ timeout: PAGE_LOAD });
+    await this.firstName.fill(name.firstName);
+    await this.page.getByRole('textbox', { name: 'Last name' }).fill(name.lastName);
+    await this.page.getByRole('button', { name: 'Continue', exact: true }).click();
+  }
+}
+
 /** The page a password reset link opens: the account's email and a new password. */
 export class PasswordResetPage {
   readonly email: Locator;

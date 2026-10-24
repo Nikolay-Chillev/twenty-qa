@@ -45,4 +45,9 @@ export class Mailbox {
     if (id === undefined) throw new Error(`No email matching ${query}`);
     return this.mailpit.message(id);
   }
+
+  /** How many emails to this address have arrived so far, optionally with `subject`. */
+  async count(options: { subject?: string } = {}): Promise<number> {
+    return (await this.mailpit.search(searchQuery(this.address, options.subject))).length;
+  }
 }
