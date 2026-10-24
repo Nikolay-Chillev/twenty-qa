@@ -11,6 +11,7 @@ Defects and risks found while testing Twenty and its environment. Each finding i
 | [#31](https://github.com/Nikolay-Chillev/twenty-qa/issues/31) | Database errors reach API clients with table, constraint and index names | Minor | Product | Open, covered by expected failures |
 | [#32](https://github.com/Nikolay-Chillev/twenty-qa/issues/32) | Phone numbers of any length are saved, and letters after the digits are cut off | Minor | Product | Open, reported upstream as [twentyhq/twenty#28764](https://github.com/twentyhq/twenty/issues/28764); covered by expected failures |
 | [#34](https://github.com/Nikolay-Chillev/twenty-qa/issues/34) | Deleting by filter over REST has no limit and is permanent by default | Major | Product | Open, reported upstream as [twentyhq/twenty#28762](https://github.com/twentyhq/twenty/issues/28762); covered by an expected failure |
+| [#52](https://github.com/Nikolay-Chillev/twenty-qa/issues/52) | Sorting a table does not reorder its rows until the view is saved or reloaded | Major | Product | Open since 2.50, covered by an expected failure |
 
 ## Details
 
@@ -37,6 +38,16 @@ Seen on 2.48.0 and again on 2.50.0. A phone number is refused only when it has n
 ### #34 Deleting by filter over REST has no limit and is permanent by default
 
 Seen on 2.48.0 and again on 2.50.0. Updating companies by filter (`PATCH /rest/companies?filter=…`) refuses more than 200 matches ("Cannot update more than 200 records at once"), and a batch create refuses more than 200 records. Deleting by filter has no such limit: a filter that matched 311 companies deleted all of them in one request. REST deletes are also permanent unless `soft_delete=true` is sent; the OpenAPI document says so, but the app and GraphQL's `deleteCompany` move records to the trash, so the same word does two different things. The records deleted that way are not in the trash and cannot be restored. This suite's REST client sends `soft_delete=true` for a delete and leaves permanent deletes to `destroy()`. Reported upstream as [twentyhq/twenty#28762](https://github.com/twentyhq/twenty/issues/28762), with steps that delete 300 companies in one request.
+
+### #52 Sorting a table does not reorder its rows until the view is saved or reloaded
+
+Seen on 2.50.1 in Chromium, Firefox and WebKit; on 2.48.0 the same steps sorted the table.
+- **What happens:** after Sort → Name, the table keeps its rows in their position order, also 10 seconds later.
+- **The request is right:** the app asks for `orderBy: [{ name: … }, { position: "AscNullsFirst" }]`, and the server answers in the sorted order.
+- **What brings the order:** saving the view, or reloading the page.
+- **Why it matters:** a user who sorts the table reads the wrong order, with nothing to tell them so.
+
+Not reported upstream yet. A related report on the app's cached sorting, [twentyhq/twenty#28739](https://github.com/twentyhq/twenty/issues/28739), is about the second sort field only.
 
 ## To investigate
 
