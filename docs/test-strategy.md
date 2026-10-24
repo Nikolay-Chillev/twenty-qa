@@ -84,7 +84,7 @@ Unit tests of the framework                   fast, no environment
 One environment definition for local runs and CI: Twenty's server and worker, Postgres, Redis and Mailpit in Docker Compose, every image pinned by digest ([ADR 0002](adr/0002-test-twenty-in-docker-pinned-by-digest.md)). A few settings deviate from Twenty's defaults so a test suite can run against it ([ADR 0005](adr/0005-adjust-the-environment-for-automated-runs.md)); they are listed in the [README](../README.md#test-environment).
 
 Known limitations:
-- `/healthz` reports OK while the database is down ([#12](https://github.com/Nikolay-Chillev/twenty-qa/issues/12)), so readiness is checked with a real API call.
+- `/healthz` is a liveness check and reports OK while the database is down, by design ([twentyhq/twenty#28763](https://github.com/twentyhq/twenty/issues/28763)), so readiness is checked with a real API call.
 - Raised rate limits and throttles mean their defaults are not exercised by ordinary tests; a test that needs a limit sets one on its own workspace.
 
 ## Execution
