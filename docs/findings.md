@@ -11,7 +11,6 @@ Defects and risks found while testing Twenty and its environment. Each finding i
 | [#31](https://github.com/Nikolay-Chillev/twenty-qa/issues/31) | Database errors reach API clients with table, constraint and index names | Minor | Product | Open, covered by expected failures |
 | [#32](https://github.com/Nikolay-Chillev/twenty-qa/issues/32) | Phone numbers of any length are saved, and letters after the digits are cut off | Minor | Product | Open, reported upstream as [twentyhq/twenty#28764](https://github.com/twentyhq/twenty/issues/28764); covered by expected failures |
 | [#34](https://github.com/Nikolay-Chillev/twenty-qa/issues/34) | Deleting by filter over REST has no limit and is permanent by default | Major | Product | Open, reported upstream as [twentyhq/twenty#28762](https://github.com/twentyhq/twenty/issues/28762); covered by an expected failure |
-| [#52](https://github.com/Nikolay-Chillev/twenty-qa/issues/52) | Sorting a table does not reorder its rows until the view is saved or reloaded | Major | Product | Open since 2.50, covered by an expected failure |
 
 ## Details
 
@@ -39,17 +38,9 @@ Seen on 2.48.0 and again on 2.50.0. A phone number is refused only when it has n
 
 Seen on 2.48.0 and again on 2.50.0. Updating companies by filter (`PATCH /rest/companies?filter=…`) refuses more than 200 matches ("Cannot update more than 200 records at once"), and a batch create refuses more than 200 records. Deleting by filter has no such limit: a filter that matched 311 companies deleted all of them in one request. REST deletes are also permanent unless `soft_delete=true` is sent; the OpenAPI document says so, but the app and GraphQL's `deleteCompany` move records to the trash, so the same word does two different things. The records deleted that way are not in the trash and cannot be restored. This suite's REST client sends `soft_delete=true` for a delete and leaves permanent deletes to `destroy()`. Reported upstream as [twentyhq/twenty#28762](https://github.com/twentyhq/twenty/issues/28762), with steps that delete 300 companies in one request.
 
-### #52 Sorting a table does not reorder its rows until the view is saved or reloaded
-
-Seen on 2.50.1 in Chromium, Firefox and WebKit; on 2.48.0 the same steps sorted the table.
-- **What happens:** after Sort → Name, the table keeps its rows in their position order, also 10 seconds later.
-- **The request is right:** the app asks for `orderBy: [{ name: … }, { position: "AscNullsFirst" }]`, and the server answers in the sorted order.
-- **What brings the order:** saving the view, or reloading the page.
-- **Why it matters:** a user who sorts the table reads the wrong order, with nothing to tell them so.
-
-Not reported upstream yet. A related report on the app's cached sorting, [twentyhq/twenty#28739](https://github.com/twentyhq/twenty/issues/28739), is about the second sort field only.
-
 ## To investigate
+
+- **After a sort, the page keeps the old reading order.** Since 2.50 a sort moves the table's rows on screen, but not in the page, until the view is saved or the page is reloaded. A screen reader follows the page, so it may read a sorted table in its old order (WCAG 1.3.2, meaningful sequence). To be checked with a screen reader and the accessibility scans (Quality milestone); see the item on #52 below.
 
 - **Permission errors are 400, not 403.** An API key whose role may only read gets `400 PERMISSION_DENIED "Entity performing the request does not have permission"` when it updates a company or reads a revoked object. To be confirmed in the permission tests (Access milestone) before it becomes a finding.
 - **The record table has no table semantics.** Rows and cells are plain elements without `table`, `row` or `cell` roles, and column headers are buttons, so a screen reader cannot tell which column a value belongs to. To be checked with the accessibility scans (Quality milestone).
@@ -78,3 +69,7 @@ Not reported upstream yet. A related report on the app's cached sorting, [twenty
   - Seen on 2.48.0 and 2.50.0: with the database stopped, the endpoint answers `200 {"status":"ok"}`, and on a fresh start it turns green before the API can serve requests.
   - Twenty's team explained it is a liveness check by design: it says whether the server process is up. A check tied to Postgres would restart every server at once during a short database outage and slow the recovery. The health of the database, Redis and the worker is shown in the admin panel.
   - A test run still has to know when the API can serve requests, so this environment checks readiness with a GraphQL query that needs the database ([ADR 0005](adr/0005-adjust-the-environment-for-automated-runs.md)).
+- **A sort that seemed not to reorder the table** (logged as [#52](https://github.com/Nikolay-Chillev/twenty-qa/issues/52)).
+  - On 2.50 the sorting test failed: the rows stayed in their old order after Sort → Name, in all three browsers, and the same steps passed on 2.49.
+  - On screen the table was sorted. Since 2.50 a sort moves the rows on screen without moving them in the page, and the test read the page's order.
+  - The test now reads the rows top to bottom as they appear on screen. What this means for screen readers is under "To investigate".
