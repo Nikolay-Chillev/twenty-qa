@@ -81,7 +81,7 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       # Pull requests run the UI in Chromium only; Firefox and WebKit join in the
-      # nightly workflow (#20).
+      # nightly workflow (nightly.yml).
       - name: Run tests
         run: npx playwright test --project=unit --project=api --project=chromium
 
@@ -115,68 +115,21 @@ jobs:
           path: compose.log
           retention-days: 14
 
+  # Runs on main only (a push or a manual run), and for failing runs too: that is
+  # when the report matters most. See report.yml, shared with the nightly run.
   report:
-    name: Build Allure report
+    name: Allure report
     needs: test
-    # Runs on main only (a push or a manual run), and for failing runs too: that is
-    # when the report matters most.
     if: ${{ !cancelled() && needs.test.result != 'skipped' && github.event_name != 'pull_request' && github.ref == 'refs/heads/main' }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
+    uses: ./.github/workflows/report.yml
+    # Shared with Nightly: one report at a time is built from the history and published.
+    concurrency:
+      group: pages
+      cancel-in-progress: false
     permissions:
       contents: read
-      pages: read # configure-pages looks up the site URL for the report history
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version-file: .nvmrc
-          cache: npm
-      - run: npm ci
-
-      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
-        with:
-          name: allure-results
-          path: allure-results
-
-      - id: pages
-        uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
-
-      - name: Restore report history
-        run: |
-          mkdir -p allure-history
-          curl -fsSL "${{ steps.pages.outputs.base_url }}/history.jsonl" -o allure-history/history.jsonl \
-            || echo "No published history yet, starting a new one"
-
-      # The history file is published with the report, so the next run can restore it.
-      - name: Generate report
-        run: |
-          npx allure generate allure-results --config allurerc.mjs --history-limit 30
-          cp allure-history/history.jsonl allure-report/history.jsonl
-
-      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
-        with:
-          path: allure-report
-
-  # Separate job, as in GitHub's Pages workflows: deploying in the same job as the
-  # upload can run before the artifact is listed. Re-run the whole workflow rather
-  # than this job alone, or the upload is duplicated and the deploy refuses two
-  # artifacts with the same name.
-  deploy:
-    name: Publish Allure report
-    needs: report
-    if: ${{ !cancelled() && needs.report.result == 'success' }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    permissions:
       pages: write
       id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deploy.outputs.page_url }}
-    steps:
-      - id: deploy
-        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
 
   # The single check required on main: fails if any job failed or was cancelled,
   # passes when the test jobs ran green or were skipped for a docs-only change.

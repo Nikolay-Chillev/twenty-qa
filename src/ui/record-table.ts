@@ -38,6 +38,19 @@ export class RecordTable {
     return this.page.getByRole('link', { name, exact: true });
   }
 
+  /**
+   * Opens a record from the link on its name, as a user does: point at it, then click.
+   * Pointing at a cell draws a copy of it on top, with the cell's controls, and the
+   * click lands on that copy; a click aimed at the cell's own link would be refused
+   * as covered.
+   */
+  async openRecord(name: string): Promise<void> {
+    await this.link(name).first().hover();
+    await expect(this.page.getByRole('group', { name: 'Cell controls' })).toBeVisible();
+    // The copy comes after the cell's own link.
+    await this.link(name).last().click();
+  }
+
   columnHeader(column: string): Locator {
     return this.page.getByRole('button', { name: column, exact: true }).first();
   }

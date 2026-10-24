@@ -1,0 +1,113 @@
+name: Nightly
+
+# The whole suite every night against a fresh environment, with the UI tests in all
+# three browser engines. Pull requests run the UI in Chromium only, to stay fast.
+on:
+  schedule:
+    - cron: "30 2 * * *" # 02:30 UTC, 05:30 in Sofia
+  workflow_dispatch:
+  # A change to this workflow, or to the report it publishes, runs it in its own
+  # pull request (without publishing).
+  pull_request:
+    paths:
+      - .github/workflows/nightly.yml
+      - .github/workflows/report.yml
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Tests in ${{ matrix.label }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      # A failure in one browser must not cancel the others.
+      fail-fast: false
+      matrix:
+        # The setup project signs the users in with Chromium whatever the browser under
+        # test, so every job installs Chromium too.
+        include:
+          - browser: chromium
+            label: Chromium
+            install: chromium
+            projects: --project=unit --project=api --project=chromium
+          - browser: firefox
+            label: Firefox
+            install: chromium firefox
+            projects: --project=firefox
+          - browser: webkit
+            label: WebKit
+            install: chromium webkit
+            projects: --project=webkit
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      # Each browser gets its own environment, so a failure in one cannot leave data
+      # or load behind for another.
+      - name: Start Twenty and Mailpit
+        run: ./scripts/start.sh
+
+      - run: npm ci
+
+      - name: Install ${{ matrix.label }}
+        run: npx playwright install --with-deps ${{ matrix.install }}
+
+      # The setup project runs first in every job, as each UI project depends on it.
+      - name: Run tests
+        run: npx playwright test ${{ matrix.projects }}
+
+      - name: Upload the HTML report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: playwright-report-${{ matrix.browser }}
+          path: playwright-report
+          retention-days: 14
+          if-no-files-found: ignore
+
+      - name: Upload Allure results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: allure-results-${{ matrix.browser }}
+          path: allure-results
+          retention-days: 14
+          if-no-files-found: ignore
+
+      - name: Collect container logs
+        if: ${{ failure() }}
+        run: docker compose logs --no-color --timestamps > compose.log
+
+      - name: Upload container logs
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: compose-logs-${{ matrix.browser }}
+          path: compose.log
+          retention-days: 14
+
+  # One report for the three browsers, published with the history of earlier runs;
+  # failing nights too, as that is when the report matters most. Only main publishes;
+  # pull requests that change this workflow only run the tests.
+  report:
+    name: Allure report
+    needs: test
+    if: ${{ !cancelled() && github.event_name != 'pull_request' && github.ref == 'refs/heads/main' }}
+    uses: ./.github/workflows/report.yml
+    # Shared with CI: one report at a time is built from the history and published.
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
