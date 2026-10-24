@@ -85,6 +85,29 @@ export class InvitationPage {
     await this.form.signUpButton.click();
   }
 
+  /**
+   * Tries a link that may no longer be valid, as its invitee would: signs up if the page
+   * offers the form for the invited address, then waits for the app's answer, a notice
+   * or the profile form. A link refused outright, with a notice or by sending the user
+   * to the sign-in page, ends at the first step.
+   */
+  async tryToJoin(link: string, password: string): Promise<void> {
+    await this.page.goto(link);
+    const answer = this.page.getByRole('status').or(this.firstName).first();
+    const offered = async () => (await this.form.email.inputValue().catch(() => '')).includes('@');
+    await expect
+      .poll(
+        async () =>
+          (await offered()) || (await answer.isVisible()) || this.page.url().includes('/welcome'),
+        { message: 'the invitation form or a refusal', timeout: PAGE_LOAD },
+      )
+      .toBe(true);
+    if ((await offered()) && !(await answer.isVisible())) {
+      await this.signUp(password);
+      await expect(answer).toBeVisible({ timeout: PAGE_LOAD });
+    }
+  }
+
   /** Signs up, then fills in the name Twenty asks a new member for. */
   async join(password: string, name: { firstName: string; lastName: string }): Promise<void> {
     await this.signUp(password);

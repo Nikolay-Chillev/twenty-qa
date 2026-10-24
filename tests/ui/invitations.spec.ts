@@ -100,13 +100,9 @@ test.describe('invitations', () => {
       );
       await removeInvitation(request, adminToken, sent?.id ?? '');
 
-      const invitation = await new InvitationPage(guestPage).open(link);
-      await invitation.signUp(password);
+      // A refusal may come at the link or at sign-up; either way, no member is made.
+      await new InvitationPage(guestPage).tryToJoin(link, password);
 
-      // Either the app refuses with a notice, or it moves on to the new member's profile.
-      await expect(guestPage.getByRole('status').or(invitation.firstName)).toBeVisible({
-        timeout: PAGE_LOAD,
-      });
       expect(await membershipOf(request, adminToken, invitee.address)).toBeUndefined();
     },
   );
