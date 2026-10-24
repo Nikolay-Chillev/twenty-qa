@@ -11,7 +11,7 @@ Defects and risks found while testing Twenty and its environment. Each finding i
 | [#31](https://github.com/Nikolay-Chillev/twenty-qa/issues/31) | Database errors reach API clients with table, constraint and index names | Minor | Product | Open, covered by expected failures |
 | [#32](https://github.com/Nikolay-Chillev/twenty-qa/issues/32) | Phone numbers of any length are saved, and letters after the digits are cut off | Minor | Product | Open, reported upstream as [twentyhq/twenty#28764](https://github.com/twentyhq/twenty/issues/28764); covered by expected failures |
 | [#34](https://github.com/Nikolay-Chillev/twenty-qa/issues/34) | Deleting by filter over REST has no limit and is permanent by default | Major | Product | Open, reported upstream as [twentyhq/twenty#28762](https://github.com/twentyhq/twenty/issues/28762); covered by an expected failure |
-| [#54](https://github.com/Nikolay-Chillev/twenty-qa/issues/54) | A removed invitation still lets the person join while the invite link is on | Major | Product | Open, covered by an expected failure |
+| [#54](https://github.com/Nikolay-Chillev/twenty-qa/issues/54) | A removed invitation still lets the person join while the invite link is on | Major | Product | Open, a risk rather than a plain defect (see the details); covered by an expected failure |
 
 ## Details
 
@@ -54,11 +54,22 @@ With "Invite by link" turned off:
 
 So removing an invitation only takes effect once the public link is turned off as well, and nothing on the members page says so. An admin who removes an invitation sent to the wrong person, or to someone who has left, leaves the door open.
 
+**Twenty's view of the public link.** Twenty's team puts convenience first for the public invite link.
+- In [twentyhq/twenty#22857](https://github.com/twentyhq/twenty/issues/22857) a maintainer called invite links inherently not very secure, and advised turning the link off when that matters.
+- The link is one permanent hash per workspace ([twentyhq/twenty#26658](https://github.com/twentyhq/twenty/issues/26658)).
+
+Seen that way, the behaviour is intended. What this finding adds:
+- "Remove invitation" gives no sign that it revokes nothing while the link is on.
+- A personal invitation email hands out the public link.
+
+So it stays here as a risk. If it is reported, it would be as a suggestion for the members page (for example a warning next to "Remove invitation"), not as a defect.
+
 ## To investigate
 
 - **The sign-in and invitation pages sometimes stay on a loader.** It happened twice in about 150 loads on 2.50.1, once in Chromium and once in Firefox, and could not be reproduced on demand.
   - The page showed its title ("Welcome, QA Workspace.", "Join QA Workspace team") and a small empty placeholder where the form goes, for 30 seconds.
   - Every request had already been answered, and the console showed no error.
+  - A similar hang on the invitation page was reported in [twentyhq/twenty#24254](https://github.com/twentyhq/twenty/issues/24254) and fixed for one case: right after signing out, in the same browser. Here it happened in fresh browsers.
   - To be watched in the nightly runs.
 - **After a sort, the page keeps the old reading order.** Since 2.50 a sort moves the table's rows on screen, but not in the page, until the view is saved or the page is reloaded. A screen reader follows the page, so it may read a sorted table in its old order (WCAG 1.3.2, meaningful sequence). To be checked with a screen reader and the accessibility scans (Quality milestone); see the item on #52 below.
 
