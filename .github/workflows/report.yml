@@ -1,0 +1,76 @@
+name: Allure report
+
+# Builds one Allure report from every allure-results artifact of the calling run and
+# publishes it to GitHub Pages with the history of earlier runs. Called by CI (on main)
+# and by Nightly, so both add to the same report and history.
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build Allure report
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pages: read # configure-pages looks up the site URL for the report history
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+
+      # One artifact from CI, one per browser from Nightly. Allure keeps the same test
+      # in two browsers apart by its Playwright project.
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: allure-results*
+          merge-multiple: true
+          path: allure-results
+
+      - id: pages
+        uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
+
+      - name: Restore report history
+        run: |
+          mkdir -p allure-history
+          curl -fsSL "${{ steps.pages.outputs.base_url }}/history.jsonl" -o allure-history/history.jsonl \
+            || echo "No published history yet, starting a new one"
+
+      # The history file is published with the report, so the next run can restore it.
+      - name: Generate report
+        run: |
+          npx allure generate allure-results --config allurerc.mjs --history-limit 30
+          cp allure-history/history.jsonl allure-report/history.jsonl
+
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: allure-report
+
+  # Separate job, as in GitHub's Pages workflows: deploying in the same job as the
+  # upload can run before the artifact is listed. Re-run the whole workflow rather
+  # than this job alone, or the upload is duplicated and the deploy refuses two
+  # artifacts with the same name.
+  deploy:
+    name: Publish Allure report
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    # CI and Nightly publish to the same site; one deployment at a time, none dropped.
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
