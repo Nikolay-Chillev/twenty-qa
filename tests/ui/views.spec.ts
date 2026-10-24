@@ -28,8 +28,6 @@ async function openCompanies(page: Page, views: ViewsApi): Promise<RecordIndexPa
 
 const idsOf = (companies: Company[]): string[] => companies.map((company) => company.id);
 
-const ISSUES = 'https://github.com/Nikolay-Chillev/twenty-qa/issues';
-
 test.describe('filters and sorts', () => {
   test('a Cyrillic name filter ignores case and finds what the API finds', async ({
     page,
@@ -51,29 +49,27 @@ test.describe('filters and sorts', () => {
       .toEqual(idsOf(records).sort());
   });
 
-  // Since 2.50 the table keeps its rows where they were until the view is saved or
-  // reloaded, although the app asks for, and gets, the sorted order.
-  test.fail(
-    'sorting by name shows the companies in the order the API sorts them',
-    { annotation: { type: 'issue', description: `${ISSUES}/52` } },
-    async ({ page, api, views }) => {
-      const tag = newTag();
-      await companiesNamed(api, tag, ['Бета', 'Ябълка', 'Алфа', 'Гама']);
-      const companies = await openCompanies(page, views);
+  test('sorting by name shows the companies in the order the API sorts them', async ({
+    page,
+    api,
+    views,
+  }) => {
+    const tag = newTag();
+    await companiesNamed(api, tag, ['Бета', 'Ябълка', 'Алфа', 'Гама']);
+    const companies = await openCompanies(page, views);
 
-      await companies.views.filter('Name', tag);
-      await companies.views.sort('Name', 'Descending');
+    await companies.views.filter('Name', tag);
+    await companies.views.sort('Name', 'Descending');
 
-      const { records } = await api.companies.list({
-        filter: `name[like]:"%${tag}%"`,
-        orderBy: 'name[DescNullsLast]',
-      });
-      expect(records.map((company) => company.name)).toEqual(
-        ['Ябълка', 'Гама', 'Бета', 'Алфа'].map((name) => `${tag} ${name}`),
-      );
-      await expect.poll(() => companies.table.ids()).toEqual(idsOf(records));
-    },
-  );
+    const { records } = await api.companies.list({
+      filter: `name[like]:"%${tag}%"`,
+      orderBy: 'name[DescNullsLast]',
+    });
+    expect(records.map((company) => company.name)).toEqual(
+      ['Ябълка', 'Гама', 'Бета', 'Алфа'].map((name) => `${tag} ${name}`),
+    );
+    await expect.poll(() => companies.table.ids()).toEqual(idsOf(records));
+  });
 });
 
 test.describe('saved views', () => {
@@ -83,6 +79,8 @@ test.describe('saved views', () => {
     api,
     views,
   }) => {
+    // Two browsers and four loads of the app: more than the usual time under load.
+    test.slow();
     const tag = newTag();
     // Created out of alphabetical order, so that the order they were created in, and
     // their position in the table, cannot pass for the sorted one.
