@@ -1,6 +1,7 @@
 # Twenty QA
 
 [![CI](https://github.com/Nikolay-Chillev/twenty-qa/actions/workflows/ci.yml/badge.svg)](https://github.com/Nikolay-Chillev/twenty-qa/actions/workflows/ci.yml)
+[![Nightly](https://github.com/Nikolay-Chillev/twenty-qa/actions/workflows/nightly.yml/badge.svg)](https://github.com/Nikolay-Chillev/twenty-qa/actions/workflows/nightly.yml)
 [![Allure report](https://img.shields.io/badge/Allure-report-orange)](https://nikolay-chillev.github.io/twenty-qa/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
@@ -112,7 +113,9 @@ Every pull request and every push to `main` runs [`ci.yml`](.github/workflows/ci
 2. A fresh Twenty and Mailpit started with `scripts/start.sh`
 3. The unit, API and UI tests, the UI in Chromium, the setup project first
 
-The HTML report and the Allure results are kept as artifacts of the run, and the container logs too when something fails. After every run on `main`, the [Allure report](https://nikolay-chillev.github.io/twenty-qa/) is published to GitHub Pages with the history of earlier runs, so trends and flaky tests show across runs. In CI a failed test is retried once so the report can tell a flaky test from a broken one, but the run still fails. Changes to documentation only skip the tests. A single `CI passed` check sums up the run.
+Every night, [`nightly.yml`](.github/workflows/nightly.yml) runs the whole suite with the UI tests in Chromium, Firefox and WebKit, each browser in its own job against its own fresh environment. It can also be started by hand from the Actions tab.
+
+The HTML report and the Allure results are kept as artifacts of the run, and the container logs too when something fails. After every run on `main` and every nightly run, the [Allure report](https://nikolay-chillev.github.io/twenty-qa/) is published to GitHub Pages with the history of earlier runs ([`report.yml`](.github/workflows/report.yml)), so trends and flaky tests show across runs. In CI a failed test is retried once so the report can tell a flaky test from a broken one, but the run still fails. Changes to documentation only skip the tests. A single `CI passed` check sums up the run.
 
 ## Documentation
 

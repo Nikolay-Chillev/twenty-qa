@@ -92,7 +92,7 @@ Known limitations:
 | When | What runs | Where |
 |---|---|---|
 | Every pull request and push to `main` | Lint, type and format checks, then unit, setup, API and UI tests in Chromium against a fresh environment, summed up in the `CI passed` check (tests are skipped for documentation-only changes) | GitHub Actions |
-| Nightly (planned, #20) | Everything, the UI in Chromium, Firefox and WebKit | GitHub Actions |
+| Every night at 02:30 UTC, and by hand | Everything against a fresh environment: unit, setup and API tests, and the UI in Chromium, Firefox and WebKit, one job and environment per browser; the Allure report is published with its history | GitHub Actions |
 | On the latest Twenty (planned) | API and UI smoke tests against the newest image, not blocking | GitHub Actions |
 | Locally | `./scripts/start.sh`, then `npm test` | Developer machine |
 
