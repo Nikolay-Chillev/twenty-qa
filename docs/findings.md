@@ -11,6 +11,7 @@ Defects and risks found while testing Twenty and its environment. Each finding i
 | [#30](https://github.com/Nikolay-Chillev/twenty-qa/issues/30) | An amount with a currency code that does not exist is saved, and the app hides it | Major | Product | Open, covered by an expected failure |
 | [#31](https://github.com/Nikolay-Chillev/twenty-qa/issues/31) | Database errors reach API clients with table, constraint and index names | Minor | Product | Open, covered by expected failures |
 | [#32](https://github.com/Nikolay-Chillev/twenty-qa/issues/32) | Phone numbers of any length are saved, and letters after the digits are cut off | Minor | Product | Open, covered by expected failures |
+| [#34](https://github.com/Nikolay-Chillev/twenty-qa/issues/34) | Deleting by filter over REST has no limit and is permanent by default | Major | Product | Open, covered by an expected failure |
 
 ## Details
 
@@ -34,6 +35,10 @@ Seen on 2.48.0. A person linked to a company that does not exist gets `400 ["ins
 
 Seen on 2.48.0. A phone number is refused only when it has no digit at all (`abc`, `телефон`). With the Bulgarian calling code, `12` and `888` are saved, `08812345678901234` is saved with 16 digits (E.164 allows 15), and `088-ABC` is saved as `088` with the rest dropped and no warning. `+359 88 123 4567` is parsed correctly into `881234567`.
 
+### #34 Deleting by filter over REST has no limit and is permanent by default
+
+Seen on 2.48.0. Updating companies by filter (`PATCH /rest/companies?filter=…`) refuses more than 200 matches ("Cannot update more than 200 records at once"), and a batch create refuses more than 200 records. Deleting by filter has no such limit: a filter that matched 311 companies deleted all of them in one request. REST deletes are also permanent unless `soft_delete=true` is sent; the OpenAPI document says so, but the app and GraphQL's `deleteCompany` move records to the trash, so the same word does two different things. The records deleted that way are not in the trash and cannot be restored. This suite's REST client sends `soft_delete=true` for a delete and leaves permanent deletes to `destroy()`.
+
 ## To investigate
 
 - **Permission errors are 400, not 403.** An API key whose role may only read gets `400 PERMISSION_DENIED "Entity performing the request does not have permission"` when it updates a company or reads a revoked object. To be confirmed in the permission tests (Access milestone) before it becomes a finding.
@@ -45,6 +50,8 @@ Seen on 2.48.0. A phone number is refused only when it has no digit at all (`abc
 - **One rate limit for all API keys of a workspace.** A new API key gets 429 as soon as another key of the same workspace has used up the 100 requests per minute, and the message says "Rate limit exceeded for apiKey". This is by design: the default limit is one pool per workspace, as a comment in Twenty's source explains, and other workspaces are not affected.
 - **A session cookie from API sign-in.** `signIn` over GraphQL also sets the web app's `twenty-session` cookie, and later cookie-authenticated calls without a matching `Origin` header are refused with `CSRF_ORIGIN_MISMATCH`. That is the expected CSRF protection; the suite authenticates with tokens and drops the cookie.
 - **Records without a name.** A company or an opportunity created without a name is saved with an empty one, the way the app creates an untitled record before the user types; covered by a test.
+- **Page size.** `limit` above 200 returns 200 records without an error, as the OpenAPI document gives 200 as the maximum; a negative limit is refused.
+- **Trash and links.** A person keeps their link to a company while the company is in the trash and after it is restored; destroying the company keeps the person and clears the link.
 - **Sample data in every new workspace.** A new workspace comes with companies and people such as Airbnb and Stripe. Intended as a demo; tests do not rely on it.
 - **Empty names on the user.** After onboarding through the API, `currentUser.firstName` is empty while the workspace member has the name. The app shows the member's name, which is where Twenty keeps it per workspace.
 - **Tenant isolation.** An API key of one workspace gets 404 for another workspace's records on read, update and delete, and a browser session is bound to its workspace's subdomain ([ADR 0001](adr/0001-run-twenty-with-multiple-workspaces.md)). To be covered by tests in the Access milestone.

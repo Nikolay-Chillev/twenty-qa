@@ -90,7 +90,7 @@ Tests import `test` and `expect` from [`src/fixtures`](src/fixtures/index.ts), w
 
 | Fixture | What it gives a test |
 |---|---|
-| `api` | REST clients for companies, people and opportunities with the suite's API key; every response is checked against a Zod schema in [`src/schemas`](src/schemas/records.ts) |
+| `api` | REST clients for companies, people and opportunities with the suite's API key: CRUD, trash and restore, lists with filters and paging, bulk operations; every response is checked against a Zod schema in [`src/schemas`](src/schemas/records.ts) |
 | `gql` | The same records through GraphQL; each query asks for exactly the fields its schema checks |
 | `anonymous` | The REST API without credentials |
 | `mailbox` | A unique email address and `waitForEmail()`, read from Mailpit |
