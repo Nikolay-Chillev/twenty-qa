@@ -9,7 +9,7 @@ Twenty's compose file is meant for running Twenty, not for testing it. Checked o
 
 - The API allows 100 requests per minute, one pool shared by all API keys of a workspace. A suite that seeds its data through the API gets 429 from the 101st call, even from a brand-new key.
 - Invitations are throttled to 10 per address per week and 500 per workspace per week; emails to 1,000 per workspace per day. Invitation tests resend to the same addresses, and a local environment lives through many runs.
-- `/healthz` reports OK before the API can serve requests and while the database is down ([#12](https://github.com/Nikolay-Chillev/twenty-qa/issues/12)), so `docker compose up --wait` could hand tests a server that answers 500. The worker, which sends emails and calls webhooks, has no health check at all.
+- `/healthz` reports OK before the API can serve requests and while the database is down ([#12](https://github.com/Nikolay-Chillev/twenty-qa/issues/12); Twenty's team later explained it is a liveness check by design, [twentyhq/twenty#28763](https://github.com/twentyhq/twenty/issues/28763)), so `docker compose up --wait` could hand tests a server that answers 500. The worker, which sends emails and calls webhooks, has no health check at all.
 - Twenty needs an encryption key, and the test users need a password.
 
 ## Decision
