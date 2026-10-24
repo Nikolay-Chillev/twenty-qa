@@ -16,8 +16,13 @@ export class RecordPage {
     return this;
   }
 
-  /** A link to a related record, e.g. a person's company. */
+  /**
+   * A link to a related record, e.g. a person's company, in the record's relations
+   * below its fields: the last link of that name. The field showing the same link is
+   * passed over, as pointing at a field draws a copy of it on top that takes the click
+   * (see `RecordTable.openRecord`).
+   */
   relation(name: string): Locator {
-    return this.page.getByRole('link', { name, exact: true }).first();
+    return this.page.getByRole('link', { name, exact: true }).last();
   }
 }

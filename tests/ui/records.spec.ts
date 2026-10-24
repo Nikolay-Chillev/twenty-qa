@@ -27,7 +27,7 @@ test.describe('the companies table', () => {
     const company = await api.companies.create(companyInput());
     const companies = await new RecordIndexPage(page, COMPANIES).open(company.name);
 
-    await companies.table.link(company.name).click();
+    await companies.table.openRecord(company.name);
 
     await expect(page).toHaveURL(new RegExp(`panel=.*${company.id}`));
     await expect(page.getByRole('heading', { name: company.name })).toBeVisible();
