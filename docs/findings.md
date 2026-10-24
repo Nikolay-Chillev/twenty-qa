@@ -54,6 +54,12 @@ Seen on 2.48.0 and again on 2.50.0. Updating companies by filter (`PATCH /rest/c
 
 ## Checked, not a finding
 
+- **The sign-in form tells whether an address has an account.**
+  - An unknown address is offered to sign up instead of sign in, and a wrong password gets "Wrong password.".
+  - Twenty chose clear feedback over generic messages, with rate limits as the protection ([twentyhq/twenty#3564](https://github.com/twentyhq/twenty/issues/3564)). Throttling sign-in is a feature request for now, and a captcha can be turned on instead ([twentyhq/twenty#26524](https://github.com/twentyhq/twenty/issues/26524)).
+  - "Forgot your password?" gives the same answer for any address.
+- **Signing up at a workspace's address needs an invitation.** Someone without one gets "User does not have access to this workspace" and is not let in.
+- **A used password reset link.** It sends the user back to sign in, with a vague "You do not have permission to perform this action." rather than a word about the link.
 - **One rate limit for all API keys of a workspace.** A new API key gets 429 as soon as another key of the same workspace has used up the 100 requests per minute, and the message says "Rate limit exceeded for apiKey". This is by design: the default limit is one pool per workspace, as a comment in Twenty's source explains, and other workspaces are not affected.
 - **A session cookie from API sign-in.** `signIn` over GraphQL also sets the web app's `twenty-session` cookie, and later cookie-authenticated calls without a matching `Origin` header are refused with `CSRF_ORIGIN_MISMATCH`. That is the expected CSRF protection; the suite authenticates with tokens and drops the cookie.
 - **Records without a name.** A company or an opportunity created without a name is saved with an empty one, the way the app creates an untitled record before the user types; covered by a test.

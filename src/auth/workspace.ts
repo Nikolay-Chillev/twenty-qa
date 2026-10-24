@@ -282,6 +282,29 @@ export async function workspaceIdOf(request: APIRequestContext, token: string): 
   return (await currentUser(request, token)).currentWorkspace.id;
 }
 
+/** The workspace member behind a user's access token. */
+export async function memberIdOf(request: APIRequestContext, token: string): Promise<string> {
+  const member = (await currentUser(request, token)).workspaceMember;
+  if (!member) throw new Error('The user is not a member of the workspace');
+  return member.id;
+}
+
+/** Takes a member out of the workspace, as an admin does in the members settings. */
+export async function removeFromWorkspace(
+  request: APIRequestContext,
+  adminToken: string,
+  workspaceMemberId: string,
+): Promise<void> {
+  await graphql(request, '/metadata', {
+    query: `mutation($id: String!) {
+      deleteUserFromWorkspace(workspaceMemberIdToDelete: $id) { id }
+    }`,
+    variables: { id: workspaceMemberId },
+    token: adminToken,
+    data: z.object({ deleteUserFromWorkspace: z.object({ id: z.string() }) }),
+  });
+}
+
 export function readSavedWorkspace(): SavedWorkspace | undefined {
   if (!existsSync(workspaceFile)) return undefined;
   const parsed = SavedWorkspace.safeParse(JSON.parse(readFileSync(workspaceFile, 'utf8')));

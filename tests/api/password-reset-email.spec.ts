@@ -1,30 +1,18 @@
-import { z } from 'zod';
-
-import { graphql } from '../../src/api/graphql';
-import { type TestUser, WORKSPACE_URL } from '../../src/auth/users';
-import { signInMember } from '../../src/auth/workspace';
+import { requestPasswordReset } from '../../src/auth/password';
+import { WORKSPACE_URL } from '../../src/auth/users';
 import { expect, test } from '../../src/fixtures';
+import { linkIn } from '../../src/mail/mailbox';
 
 test(
   'a password reset email arrives with a link back to Twenty',
   { tag: ['@smoke', '@email'] },
-  async ({ request, mailbox, adminToken, password }) => {
-    const user: TestUser = {
-      role: 'member',
-      email: mailbox.address,
-      firstName: 'Елена',
-      lastName: 'Димитрова',
-    };
-    await signInMember(request, password, adminToken, user);
-
-    await graphql(request, '/metadata', {
-      query: 'mutation($email: String!) { emailPasswordResetLink(email: $email) { success } }',
-      variables: { email: user.email },
-      data: z.object({ emailPasswordResetLink: z.object({ success: z.literal(true) }) }),
-    });
+  async ({ request, mailbox, newMember }) => {
+    await requestPasswordReset(request, newMember.email);
     const email = await mailbox.waitForEmail({ subject: 'Reset Password' });
 
     expect(email.Subject).toBe('Action Needed to Reset Password');
-    expect(email.Text).toContain(`${WORKSPACE_URL}/reset-password/`);
+    expect(linkIn(email, '/reset-password/')).toMatch(
+      new RegExp(`^${WORKSPACE_URL}/reset-password/[0-9a-f]{64}$`),
+    );
   },
 );

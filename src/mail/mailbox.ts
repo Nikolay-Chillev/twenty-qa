@@ -7,6 +7,13 @@ import type { Email, Mailpit } from './mailpit';
 /** A fresh address on the reserved example.com domain. */
 export const uniqueAddress = (): string => `qa-${randomUUID()}@example.com`;
 
+/** The first link in an email's text whose address contains `path`, e.g. `/reset-password/`. */
+export function linkIn(email: Pick<Email, 'Subject' | 'Text'>, path: string): string {
+  const link = email.Text.match(/https?:\/\/[^\s"<>]+/g)?.find((url) => url.includes(path));
+  if (!link) throw new Error(`No link to ${path} in the email "${email.Subject}"`);
+  return link;
+}
+
 /** Mailpit's search query for emails to `address`, optionally with `subject` in the subject. */
 export function searchQuery(address: string, subject?: string): string {
   return subject ? `to:"${address}" subject:"${subject}"` : `to:"${address}"`;
