@@ -39,7 +39,14 @@ export default defineConfig({
     // Checks of the framework itself; they need neither Twenty nor a browser.
     { name: 'unit', testDir: './tests/unit' },
     // Creates the workspace, the users and their signed-in state for the other projects.
-    { name: 'setup', testDir: './tests/setup', testMatch: /.*\.setup\.ts/ },
+    // A sign-in may wait 20 s for a page stuck on its loader, reload it (src/ui/sign-in.ts)
+    // and then wait up to 30 s for the app, so setup gets 120 s rather than the default 30.
+    {
+      name: 'setup',
+      testDir: './tests/setup',
+      testMatch: /.*\.setup\.ts/,
+      timeout: 120_000,
+    },
     { name: 'api', testDir: './tests/api', dependencies: ['setup'] },
     // UI tests run as the admin unless they pick another role with test.use().
     // A page load alone may take up to 30 s (src/ui/record-table.ts), so UI tests get 60.
