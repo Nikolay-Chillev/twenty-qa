@@ -12,6 +12,7 @@ Defects and risks found while testing Twenty and its environment. Each finding i
 | [#32](https://github.com/Nikolay-Chillev/twenty-qa/issues/32) | Phone numbers of any length are saved, and letters after the digits are cut off | Minor | Product | Open, reported upstream as [twentyhq/twenty#28764](https://github.com/twentyhq/twenty/issues/28764); covered by expected failures |
 | [#34](https://github.com/Nikolay-Chillev/twenty-qa/issues/34) | Deleting by filter over REST has no limit and is permanent by default | Major | Product | Open, reported upstream as [twentyhq/twenty#28762](https://github.com/twentyhq/twenty/issues/28762); covered by an expected failure |
 | [#54](https://github.com/Nikolay-Chillev/twenty-qa/issues/54) | A removed invitation still lets the person join while the invite link is on | Major | Product | Open, a risk rather than a plain defect (see the details); covered by an expected failure |
+| [#57](https://github.com/Nikolay-Chillev/twenty-qa/issues/57) | The sign-in page sometimes stays on its loader for good | Major | Product | Open; the suite reloads once and annotates the test |
 
 ## Details
 
@@ -64,13 +65,22 @@ Seen that way, the behaviour is intended. What this finding adds:
 
 So it stays here as a risk. If it is reported, it would be as a suggestion for the members page (for example a warning next to "Remove invitation"), not as a defect.
 
+### #57 The sign-in page sometimes stays on its loader for good
+
+Seen on 2.50.1.
+- **What happens:** the sign-in page, or the page an invitation link opens, shows the workspace's name and a loader, and stays like that. 60 seconds more change nothing; a reload shows the form.
+- **How often:**
+  - In Firefox, about once in 80 to 160 loads with four browsers loading at once.
+  - In Chromium, once in CI and never in 120 local loads.
+  - In the suite it showed up as one-off failures of the sign-in and invitation tests, and of a nightly run.
+- **What the hangs have in common:** all 5 hangs sent `GetPublicWorkspaceDataByDomain` twice, and all 79 good loads sent it once. Nothing is pending and the console has no error.
+
+The likely cause is in the front end. `useGetPublicWorkspaceDataByDomain` is used by both `SignInUp.tsx` and `WorkspaceProviderEffect.tsx`, and skips its query once the workspace's public data is in the app's state. When both copies start the query at once, the first answer fills the state and the other copy is skipped while its request is in flight. The page shows its loader while the hook reports loading, and in the hangs that never ends. The code is the same in 2.52.0 and on main.
+
+A similar hang, right after signing out in the same browser, was fixed in [twentyhq/twenty#24254](https://github.com/twentyhq/twenty/issues/24254). The suite reloads a page that has not shown its form after 20 seconds, once, and annotates the test with #57, so the reports keep count.
+
 ## To investigate
 
-- **The sign-in and invitation pages sometimes stay on a loader.** It happened twice in about 150 loads on 2.50.1, once in Chromium and once in Firefox, and could not be reproduced on demand.
-  - The page showed its title ("Welcome, QA Workspace.", "Join QA Workspace team") and a small empty placeholder where the form goes, for 30 seconds.
-  - Every request had already been answered, and the console showed no error.
-  - A similar hang on the invitation page was reported in [twentyhq/twenty#24254](https://github.com/twentyhq/twenty/issues/24254) and fixed for one case: right after signing out, in the same browser. Here it happened in fresh browsers.
-  - To be watched in the nightly runs.
 - **After a sort, the page keeps the old reading order.** Since 2.50 a sort moves the table's rows on screen, but not in the page, until the view is saved or the page is reloaded. A screen reader follows the page, so it may read a sorted table in its old order (WCAG 1.3.2, meaningful sequence). To be checked with a screen reader and the accessibility scans (Quality milestone); see the item on #52 below.
 
 - **Permission errors are 400, not 403.** An API key whose role may only read gets `400 PERMISSION_DENIED "Entity performing the request does not have permission"` when it updates a company or reads a revoked object. To be confirmed in the permission tests (Access milestone) before it becomes a finding.
