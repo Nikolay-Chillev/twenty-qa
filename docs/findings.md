@@ -12,7 +12,7 @@ Defects and risks found while testing Twenty and its environment. Each finding i
 | [#32](https://github.com/Nikolay-Chillev/twenty-qa/issues/32) | Phone numbers of any length are saved, and letters after the digits are cut off | Minor | Product | Open, reported upstream as [twentyhq/twenty#28764](https://github.com/twentyhq/twenty/issues/28764); covered by expected failures |
 | [#34](https://github.com/Nikolay-Chillev/twenty-qa/issues/34) | Deleting by filter over REST has no limit and is permanent by default | Major | Product | Open, reported upstream as [twentyhq/twenty#28762](https://github.com/twentyhq/twenty/issues/28762); covered by an expected failure |
 | [#54](https://github.com/Nikolay-Chillev/twenty-qa/issues/54) | A removed invitation still lets the person join while the invite link is on | Major | Product | Open, a risk rather than a plain defect (see the details); covered by an expected failure |
-| [#57](https://github.com/Nikolay-Chillev/twenty-qa/issues/57) | The sign-in page sometimes stays on its loader for good | Major | Product | Open; the suite reloads once and annotates the test |
+| [#57](https://github.com/Nikolay-Chillev/twenty-qa/issues/57) | The sign-in page sometimes stays on its loader for good | Major | Product | Open, reported upstream as [twentyhq/twenty#29254](https://github.com/twentyhq/twenty/issues/29254); the suite reloads once and annotates the test |
 
 ## Details
 
@@ -77,7 +77,7 @@ Seen on 2.50.1.
 
 The likely cause is in the front end. `useGetPublicWorkspaceDataByDomain` is used by both `SignInUp.tsx` and `WorkspaceProviderEffect.tsx`, and skips its query once the workspace's public data is in the app's state. When both copies start the query at once, the first answer fills the state and the other copy is skipped while its request is in flight. The page shows its loader while the hook reports loading, and in the hangs that never ends. The code is the same in 2.52.0 and on main.
 
-A similar hang, right after signing out in the same browser, was fixed in [twentyhq/twenty#24254](https://github.com/twentyhq/twenty/issues/24254). The suite reloads a page that has not shown its form after 20 seconds, once, and annotates the test with #57, so the reports keep count.
+A similar hang, right after signing out in the same browser, was fixed in [twentyhq/twenty#24254](https://github.com/twentyhq/twenty/issues/24254). The suite reloads a page that has not shown its form after 20 seconds, once, and annotates the test with #57, so the reports keep count. Reported upstream as [twentyhq/twenty#29254](https://github.com/twentyhq/twenty/issues/29254).
 
 ## To investigate
 
