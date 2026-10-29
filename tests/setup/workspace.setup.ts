@@ -1,12 +1,6 @@
 import { expect, test as setup } from '@playwright/test';
 
-import {
-  type Role,
-  storageStateOf,
-  USERS,
-  WORKSPACE_NAME,
-  WORKSPACE_URL,
-} from '../../src/auth/users';
+import { type Role, storageStateOf, USERS, WORKSPACE_URL } from '../../src/auth/users';
 import {
   apiKeyFor,
   readSavedWorkspace,
@@ -16,6 +10,8 @@ import {
   workspaceIdOf,
 } from '../../src/auth/workspace';
 import { config } from '../../src/config';
+import { Navigation } from '../../src/ui/navigation';
+import { SignInPage } from '../../src/ui/sign-in';
 
 setup.describe.configure({ mode: 'serial' });
 
@@ -40,17 +36,11 @@ setup('create the workspace, a user per role and an API key', async ({ request }
 
 for (const role of ['admin', 'member'] satisfies Role[]) {
   setup(`sign in as ${role}`, async ({ page }) => {
-    await page.goto(WORKSPACE_URL);
-    await page.getByPlaceholder('Email').fill(USERS[role].email);
-    await page.getByRole('button', { name: 'Continue', exact: true }).click();
-    await page.getByPlaceholder('Password').fill(password());
-    await page.getByRole('button', { name: 'Sign in' }).click();
+    await new SignInPage(page, WORKSPACE_URL).signIn(USERS[role].email, password());
 
     // The first sign-in on a fresh environment also loads the whole front end and the
     // workspace metadata; on a CI runner the app rendered just after 5 seconds.
-    await expect(page.getByRole('button', { name: WORKSPACE_NAME })).toBeVisible({
-      timeout: 30_000,
-    });
+    await expect(new Navigation(page).workspaceMenu).toBeVisible({ timeout: 30_000 });
     await page.context().storageState({ path: storageStateOf(role) });
   });
 }
