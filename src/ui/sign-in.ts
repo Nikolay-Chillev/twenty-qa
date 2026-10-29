@@ -1,6 +1,30 @@
-import { expect, type Locator, type Page } from '@playwright/test';
+import { expect, type Locator, type Page, test } from '@playwright/test';
 
 import { PAGE_LOAD } from './record-table';
+
+const STUCK_ON_LOADER = 'https://github.com/Nikolay-Chillev/twenty-qa/issues/57';
+
+/** Longer than the form took to show in any load that worked, with a margin for CI. */
+const FORM_SHOWN_WITHIN = 20_000;
+
+/**
+ * Waits for the sign-in form. Now and then Twenty leaves the page on its loader for
+ * good (finding #57); a reload shows the form. So the page is reloaded once, and the
+ * test is annotated with the finding, which keeps count of how often it happens.
+ */
+async function waitForForm(page: Page, field: Locator): Promise<void> {
+  const shown = await field.waitFor({ timeout: FORM_SHOWN_WITHIN }).then(
+    () => true,
+    () => false,
+  );
+  if (shown) return;
+  test.info().annotations.push({
+    type: 'issue',
+    description: `${STUCK_ON_LOADER} (the page stayed on its loader and was reloaded)`,
+  });
+  await page.reload();
+  await expect(field).toBeVisible({ timeout: PAGE_LOAD });
+}
 
 /**
  * The workspace's welcome page, at its own address: one form that asks for the email
@@ -12,7 +36,11 @@ export class SignInPage {
   readonly signInButton: Locator;
   readonly signUpButton: Locator;
 
-  constructor(readonly page: Page) {
+  /** `home` is where the page lives, relative to the test's base URL or absolute. */
+  constructor(
+    readonly page: Page,
+    private readonly home = '/',
+  ) {
     this.email = page.getByRole('textbox', { name: 'Email', exact: true });
     this.password = page.getByRole('textbox', { name: 'Password', exact: true });
     this.signInButton = page.getByRole('button', { name: 'Sign in', exact: true });
@@ -25,8 +53,8 @@ export class SignInPage {
   }
 
   async open(): Promise<this> {
-    await this.page.goto('/');
-    await expect(this.email).toBeVisible({ timeout: PAGE_LOAD });
+    await this.page.goto(this.home);
+    await waitForForm(this.page, this.email);
     return this;
   }
 
@@ -74,7 +102,8 @@ export class InvitationPage {
 
   async open(link: string): Promise<this> {
     await this.page.goto(link);
-    await expect(this.form.email).toHaveValue(/@/, { timeout: PAGE_LOAD });
+    await waitForForm(this.page, this.form.email);
+    await expect(this.form.email).toHaveValue(/@/);
     return this;
   }
 
