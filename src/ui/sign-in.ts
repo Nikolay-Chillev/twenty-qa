@@ -22,7 +22,9 @@ async function waitForForm(page: Page, field: Locator): Promise<void> {
     type: 'issue',
     description: `${STUCK_ON_LOADER} (the page stayed on its loader and was reloaded)`,
   });
-  await page.reload();
+  // A slow page may move on by itself meanwhile, and Firefox then aborts the reload
+  // (NS_BINDING_ABORTED); what counts is that the form shows.
+  await page.reload().catch(() => undefined);
   await expect(field).toBeVisible({ timeout: PAGE_LOAD });
 }
 
@@ -69,6 +71,19 @@ export class SignInPage {
     await this.enterEmail(email);
     await this.password.fill(password);
     await this.signInButton.click();
+  }
+
+  /** The step after the password for a user with two-factor sign-in. */
+  get codeStep(): Locator {
+    return this.page.getByText('Verify code from the app', { exact: true });
+  }
+
+  /** Types the code from the authenticator app and submits it. */
+  async enterCode(code: string): Promise<void> {
+    await expect(this.codeStep).toBeVisible();
+    await this.page.getByRole('textbox').first().click();
+    await this.page.keyboard.type(code);
+    await this.page.getByRole('button', { name: 'Submit' }).click();
   }
 
   /** Asks for the reset email from the password step, as a user who forgot it does. */
