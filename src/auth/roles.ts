@@ -135,6 +135,20 @@ export class RolesApi {
     );
   }
 
+  /**
+   * Gives a workspace member the role, as the members settings do. A role that is deleted
+   * hands its members back to the default role, Member.
+   */
+  async assign(roleId: string, workspaceMemberId: string): Promise<void> {
+    await this.call(
+      `mutation($workspaceMemberId: UUID!, $roleId: UUID!) {
+        updateWorkspaceMemberRole(workspaceMemberId: $workspaceMemberId, roleId: $roleId) { id }
+      }`,
+      { workspaceMemberId, roleId },
+      z.object({ updateWorkspaceMemberRole: z.object({ id: z.uuid() }) }),
+    );
+  }
+
   /** A new API key with the role, as "Create API key" in the settings makes one. */
   async apiKey(roleId: string): Promise<ApiKey> {
     const { createApiKey } = await this.call(

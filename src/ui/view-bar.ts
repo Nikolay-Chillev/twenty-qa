@@ -19,10 +19,20 @@ export class ViewBar {
     return this.page.getByRole('button', { name: `${field} : ${value}`, exact: true });
   }
 
+  /** Opens the Filter menu and returns its list of the fields a filter may be on. */
+  async openFilterFields(): Promise<Locator> {
+    await this.page.getByRole('button', { name: 'Filter' }).first().click();
+    const fields = this.page
+      .getByRole('listbox')
+      .filter({ has: this.page.getByRole('textbox', { name: 'Search fields' }) });
+    await expect(fields).toBeVisible();
+    return fields;
+  }
+
   /** Shows only the records whose field contains the value, as typed in the filter menu. */
   async filter(field: string, value: string): Promise<void> {
-    await this.page.getByRole('button', { name: 'Filter' }).first().click();
-    await this.page.getByRole('listbox').getByRole('button', { name: field, exact: true }).click();
+    const fields = await this.openFilterFields();
+    await fields.getByRole('button', { name: field, exact: true }).click();
     await this.page.locator(':focus').fill(value);
     await this.page.keyboard.press('Escape');
     await expect(this.chip(field, value)).toBeVisible();
@@ -95,7 +105,7 @@ export class ViewBar {
   }
 
   async rename(name: string, newName: string): Promise<void> {
-    const menu = await this.viewMenu(name);
+    const menu = await this.openMenu(name);
     await menu.getByRole('menuitem', { name: 'Edit' }).click();
     await this.page.locator(':focus').fill(newName);
     await this.page.keyboard.press('Enter');
@@ -105,12 +115,15 @@ export class ViewBar {
 
   /** Deletes a view from its menu in the list of views. Twenty asks for no confirmation. */
   async delete(name: string): Promise<void> {
-    const menu = await this.viewMenu(name);
+    const menu = await this.openMenu(name);
     await menu.getByRole('menuitem', { name: 'Delete' }).click();
   }
 
-  /** Opens the menu of a view in the list; its button shows only while the view is hovered. */
-  private async viewMenu(name: string): Promise<Locator> {
+  /**
+   * Opens the menu of a view in the list, e.g. with Edit and Delete; its button shows
+   * only while the view is hovered.
+   */
+  async openMenu(name: string): Promise<Locator> {
     await this.openList();
     const item = this.page
       .getByRole('listbox')
