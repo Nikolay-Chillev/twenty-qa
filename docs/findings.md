@@ -89,7 +89,9 @@ Twenty maps `PERMISSION_DENIED` to 403 in a filter of its own, but the filter is
 
 ### #68 A field a role may not see is listed on the record page as an empty field
 
-Seen on 2.52.0. A role with no access to a company's Domain Name does not get that column in the table, nor the field among the filters and columns it can add. The record page still lists Domain Name, with its empty placeholder, exactly like a company without a domain. The value is not shown and the field cannot be edited, so nothing leaks, but the member reads the company as having no domain and may add a duplicate or report the data as missing. Twenty's permissions guide says a field with "No Access" is "completely hidden". The front end has a "Not shared" display with a lock for values hidden by record sharing, but the record page's field list does not use the field permissions, on main either.
+Seen on 2.52.0. A role with no access to a company's Domain Name does not get that column in the table, nor the field among the filters and columns it can add. The record page still lists Domain Name, with its empty placeholder, exactly like a company without a domain. The value is not shown and the field cannot be edited, so nothing leaks, but the member reads the company as having no domain and may add a duplicate or report the data as missing. Twenty's permissions guide says a field with "No Access" is "completely hidden". The front end has a "Not shared" display with a lock for values hidden by record sharing, but the record page's field list does not use the field permissions, so the value is not fetched and the field shows as empty.
+
+Checked further: the same happens for six fields of four types (relation, currency, address and links on a company; phones and text on a person), each with a value. The role editor shows such a field with See and Edit unchecked, which is what unchecking See there sets. The files that draw a record's fields are the same in 2.54.0 and on main, apart from one unrelated relation dropdown, and no issue in twentyhq/twenty reports it.
 
 ## To investigate
 
