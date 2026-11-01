@@ -71,6 +71,19 @@ export class SignInPage {
     await this.signInButton.click();
   }
 
+  /** The step after the password for a user with two-factor sign-in. */
+  get codeStep(): Locator {
+    return this.page.getByText('Verify code from the app', { exact: true });
+  }
+
+  /** Types the code from the authenticator app and submits it. */
+  async enterCode(code: string): Promise<void> {
+    await expect(this.codeStep).toBeVisible();
+    await this.page.getByRole('textbox').first().click();
+    await this.page.keyboard.type(code);
+    await this.page.getByRole('button', { name: 'Submit' }).click();
+  }
+
   /** Asks for the reset email from the password step, as a user who forgot it does. */
   async forgotPassword(email: string): Promise<void> {
     await this.open();
