@@ -13,6 +13,7 @@ Defects and risks found while testing Twenty and its environment. Each finding i
 | [#34](https://github.com/Nikolay-Chillev/twenty-qa/issues/34) | Deleting by filter over REST has no limit and is permanent by default | Major | Product | Open, reported upstream as [twentyhq/twenty#28762](https://github.com/twentyhq/twenty/issues/28762); covered by an expected failure |
 | [#54](https://github.com/Nikolay-Chillev/twenty-qa/issues/54) | A removed invitation still lets the person join while the invite link is on | Major | Product | Open, a risk rather than a plain defect (see the details); covered by an expected failure |
 | [#57](https://github.com/Nikolay-Chillev/twenty-qa/issues/57) | The sign-in page sometimes stays on its loader for good | Major | Product | Open, reported upstream as [twentyhq/twenty#29254](https://github.com/twentyhq/twenty/issues/29254); the suite reloads once and annotates the test |
+| [#65](https://github.com/Nikolay-Chillev/twenty-qa/issues/65) | A refusal for lack of permission is 400 over REST, not 403 | Minor | Product | Open, covered by an expected failure |
 
 ## Details
 
@@ -79,15 +80,20 @@ The likely cause is in the front end. `useGetPublicWorkspaceDataByDomain` is use
 
 A similar hang, right after signing out in the same browser, was fixed in [twentyhq/twenty#24254](https://github.com/twentyhq/twenty/issues/24254). The suite reloads a page that has not shown its form after 20 seconds, once, and annotates the test with #57, so the reports keep count. Reported upstream as [twentyhq/twenty#29254](https://github.com/twentyhq/twenty/issues/29254).
 
+### #65 A refusal for lack of permission is 400 over REST, not 403
+
+Seen on 2.52.0. When a role does not allow a request, REST answers `400 {"error":"Error","messages":["Entity performing the request does not have permission"],"code":"PERMISSION_DENIED"}`: for creating, changing or deleting a record, reading an object or a field the role may not read, filtering on a hidden field, and a member adding a webhook. GraphQL refuses the same requests as `FORBIDDEN`, and REST itself answers 403 for a revoked API key. 400 tells a client its request is malformed, so an integration logs a bug of its own instead of telling the user they lack a permission.
+
+The REST exception filter answers 400 for any error that is not an HTTP exception, with a comment that the default should be 500, and the REST handler has no case for the permissions error. The permission tests check the body's `PERMISSION_DENIED` code; one test expects 403 and is marked as an expected failure.
+
 ## To investigate
 
 - **After a sort, the page keeps the old reading order.** Since 2.50 a sort moves the table's rows on screen, but not in the page, until the view is saved or the page is reloaded. A screen reader follows the page, so it may read a sorted table in its old order (WCAG 1.3.2, meaningful sequence). To be checked with a screen reader and the accessibility scans (Quality milestone); see the item on #52 below.
 
-- **Permission errors are 400, not 403.** An API key whose role may only read gets `400 PERMISSION_DENIED "Entity performing the request does not have permission"` when it updates a company or reads a revoked object. To be confirmed in the permission tests (Access milestone) before it becomes a finding.
 - **The record table has no table semantics.** Rows and cells are plain elements without `table`, `row` or `cell` roles, and column headers are buttons, so a screen reader cannot tell which column a value belongs to. To be checked with the accessibility scans (Quality milestone).
 - **Negative deal amounts.** An opportunity of −5 EUR is accepted over REST. A credit or a refund could be a reason, but nothing in the app suggests deals are meant to be negative; to be checked with how the pipeline sums amounts.
 - **A new view goes first for everyone.** A view saved with "Save as new view" gets position 0, comes before "All Companies" in every member's list of views, and is what `/objects/companies` opens without a view id, for example in a new browser. The sidebar link keeps each browser's last view, so members who opened the table before are not affected. To be checked whether that order is intended.
-- **Deleting a shared view takes one click.** "Delete" in a view's menu removes the view for the whole workspace at once, without a confirmation and without a trash to restore it from. Whether a member may delete a view someone else saved is to be checked in the permission tests (Access milestone).
+- **Deleting a shared view takes one click.** "Delete" in a view's menu removes the view for the whole workspace at once, without a confirmation and without a trash to restore it from. Any member may do it to a view someone else saved: the Member role has the Views permission, through its access to all tools. A role without it is refused, so an admin can limit this; the API tests check both.
 - **The schema and the server disagree on the workspace name.** `SignUpInNewWorkspaceInput.displayName` is optional in the GraphQL schema, but `signUpInNewWorkspace` without it fails with "Workspace name is required". Minor: the app always sends a name.
 
 ## Checked, not a finding

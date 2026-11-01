@@ -96,6 +96,8 @@ Tests import `test` and `expect` from [`src/fixtures`](src/fixtures/index.ts), w
 | `anonymous` | The REST API without credentials |
 | `mailbox` | A unique email address and `waitForEmail()`, read from Mailpit |
 | `adminToken`, `password` | For `/metadata` calls an API key cannot make, such as invitations |
+| `memberToken` | The member's access token, for calls made with the built-in Member role |
+| `roles` | Custom roles with object, field and other permissions, and API keys with a role; the roles and keys a test makes are removed after it. `apiFor()` and `graphqlFor()` give the records API with any token |
 | `views` | Saved views of the tables over `/metadata`: finds an object's own view, creates a view with filters, reads what a view saved; the views a test creates are removed after it |
 | `memberPage` | A second browser signed in as the member, next to the admin's `page` |
 | `newMember` | A member made for one test, with the test's mailbox address, so it can sign out or change its password without touching the suite's users; removed from the workspace afterwards |
