@@ -13,7 +13,7 @@ Test automation for [Twenty](https://github.com/twentyhq/twenty), an open-source
 
 | Service | Image | URL |
 |---|---|---|
-| Twenty 2.50.1 (server and worker) | [twentycrm/twenty](https://hub.docker.com/r/twentycrm/twenty) | API: http://localhost:3000<br>Test workspace: http://qa.localhost:3000 |
+| Twenty 2.52.0 (server and worker) | [twentycrm/twenty](https://hub.docker.com/r/twentycrm/twenty) | API: http://localhost:3000<br>Test workspace: http://qa.localhost:3000 |
 | Postgres 16 and Redis 8 | official images | internal only |
 | Mailpit (catches all outgoing email) | [axllent/mailpit](https://github.com/axllent/mailpit) | http://localhost:8026 |
 
@@ -96,6 +96,8 @@ Tests import `test` and `expect` from [`src/fixtures`](src/fixtures/index.ts), w
 | `anonymous` | The REST API without credentials |
 | `mailbox` | A unique email address and `waitForEmail()`, read from Mailpit |
 | `adminToken`, `password` | For `/metadata` calls an API key cannot make, such as invitations |
+| `memberToken` | The member's access token, for calls made with the built-in Member role |
+| `roles` | Custom roles with object, field and other permissions, and API keys with a role; the roles and keys a test makes are removed after it. `apiFor()` and `graphqlFor()` give the records API with any token |
 | `views` | Saved views of the tables over `/metadata`: finds an object's own view, creates a view with filters, reads what a view saved; the views a test creates are removed after it |
 | `memberPage` | A second browser signed in as the member, next to the admin's `page` |
 | `newMember` | A member made for one test, with the test's mailbox address, so it can sign out or change its password without touching the suite's users; removed from the workspace afterwards |

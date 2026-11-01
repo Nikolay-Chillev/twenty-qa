@@ -88,6 +88,7 @@ export interface CompanyInput {
   name?: string;
   domainName?: Partial<z.infer<typeof Links>>;
   address?: Partial<z.infer<typeof Address>>;
+  annualRevenue?: { amountMicros?: number; currencyCode?: string };
   accountOwnerId?: string | null;
 }
 

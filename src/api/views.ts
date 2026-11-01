@@ -2,6 +2,7 @@ import type { APIRequestContext } from '@playwright/test';
 import { z } from 'zod';
 
 import { graphql, GraphQLError } from './graphql';
+import { objectMetadata } from './metadata';
 
 // Saved views of the record tables. Twenty keeps them with the workspace's metadata, on
 // /metadata; a view with WORKSPACE visibility is listed for every member.
@@ -43,28 +44,6 @@ const VIEW = `id name key position visibility objectMetadataId
   viewFilters { fieldMetadataId operand value }
   viewSorts { fieldMetadataId direction }`;
 
-const Objects = z.object({
-  objects: z.object({
-    edges: z.array(
-      z.object({
-        node: z.object({
-          id: z.uuid(),
-          nameSingular: z.string(),
-          fields: z.object({
-            edges: z.array(z.object({ node: z.object({ id: z.uuid(), name: z.string() }) })),
-          }),
-        }),
-      }),
-    ),
-  }),
-});
-
-interface ObjectMetadata {
-  id: string;
-  /** Field ids by field name, e.g. `name` */
-  fields: Map<string, string>;
-}
-
 function indexViewOf(object: string, views: View[]): View {
   const index = views.find((view) => view.key === 'INDEX');
   if (!index) throw new Error(`The ${object} table has no index view`);
@@ -89,7 +68,7 @@ export class ViewsApi {
 
   /** The views of an object's table, e.g. `company`. */
   async list(object: string): Promise<View[]> {
-    const { id } = await this.object(object);
+    const { id } = await objectMetadata(this.request, this.token, object);
     const data = await this.call(
       `query($id: String!) { getViews(objectMetadataId: $id) { ${VIEW} } }`,
       { id },
@@ -120,7 +99,7 @@ export class ViewsApi {
    * list of views. It is removed when the test ends.
    */
   async create(object: string, view: NewView): Promise<View> {
-    const metadata = await this.object(object);
+    const metadata = await objectMetadata(this.request, this.token, object);
     const views = await this.list(object);
     const index = indexViewOf(object, views);
     const { createView } = await this.call(
@@ -196,21 +175,6 @@ export class ViewsApi {
     }
     this.toRemove.clear();
     this.namedToRemove.length = 0;
-  }
-
-  private async object(nameSingular: string): Promise<ObjectMetadata> {
-    const data = await this.call(
-      `query { objects(paging: { first: 200 }) { edges { node { id nameSingular
-        fields(paging: { first: 200 }) { edges { node { id name } } } } } } }`,
-      {},
-      Objects,
-    );
-    const found = data.objects.edges.find(({ node }) => node.nameSingular === nameSingular);
-    if (!found) throw new Error(`No object named ${nameSingular}`);
-    return {
-      id: found.node.id,
-      fields: new Map(found.node.fields.edges.map(({ node }) => [node.name, node.id])),
-    };
   }
 
   private async call<Data extends z.ZodType>(

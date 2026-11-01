@@ -1,10 +1,11 @@
-import { test as base, type Page } from '@playwright/test';
+import { type APIRequestContext, test as base, type Page } from '@playwright/test';
 
 import { graphqlRecordsApi } from '../api/graphql-records';
 import { type CrudApi, recordsApi, type RecordsApi } from '../api/records';
 import { RestClient } from '../api/rest';
 import { ViewsApi } from '../api/views';
 import { listInvitations, membershipOf, removeInvitation } from '../auth/invitations';
+import { RolesApi } from '../auth/roles';
 import { storageStateOf, type TestUser, WORKSPACE_URL } from '../auth/users';
 import {
   memberIdOf,
@@ -40,6 +41,31 @@ export interface GraphQLApi {
   opportunities: CrudApi<Opportunity, OpportunityInput>;
 }
 
+/** The REST API with a token, e.g. an API key or a user's access token. */
+export function apiFor(request: APIRequestContext, token: string): Api {
+  const rest = new RestClient(request, token);
+  return {
+    rest,
+    companies: recordsApi(rest, 'companies', Company),
+    people: recordsApi(rest, 'people', Person),
+    opportunities: recordsApi(rest, 'opportunities', Opportunity),
+  };
+}
+
+/** The GraphQL API at `/graphql` with a token. */
+export function graphqlFor(request: APIRequestContext, token: string): GraphQLApi {
+  return {
+    companies: graphqlRecordsApi(request, token, { singular: 'company', type: 'Company' }, Company),
+    people: graphqlRecordsApi(request, token, { singular: 'person', type: 'Person' }, Person),
+    opportunities: graphqlRecordsApi(
+      request,
+      token,
+      { singular: 'opportunity', type: 'Opportunity' },
+      Opportunity,
+    ),
+  };
+}
+
 interface TestFixtures {
   /** REST API with the suite's API key (Admin role). */
   api: Api;
@@ -51,6 +77,8 @@ interface TestFixtures {
   mailbox: Mailbox;
   /** Saved views of the tables, with the same API key; the views a test makes go after it. */
   views: ViewsApi;
+  /** Roles and API keys, made with the admin's token; the ones a test makes go after it. */
+  roles: RolesApi;
   /** A second browser, signed in as the member, next to the admin's `page`. */
   memberPage: Page;
   /**
@@ -72,6 +100,8 @@ interface WorkerFixtures {
   workspace: SavedWorkspace;
   /** An access token of the admin, for /metadata calls an API key may not make. */
   adminToken: string;
+  /** An access token of the member, the user with the built-in Member role. */
+  memberToken: string;
   /** Password of the suite's users. */
   password: string;
 }
@@ -104,27 +134,25 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
     { scope: 'worker' },
   ],
 
+  memberToken: [
+    async ({ playwright, password, adminToken }, use) => {
+      const request = await playwright.request.newContext({ baseURL: config.TWENTY_URL });
+      await use(await signInMember(request, password, adminToken));
+      await request.dispose();
+    },
+    { scope: 'worker' },
+  ],
+
   api: async ({ request, workspace }, use) => {
-    const rest = new RestClient(request, workspace.apiKey);
-    await use({
-      rest,
-      companies: recordsApi(rest, 'companies', Company),
-      people: recordsApi(rest, 'people', Person),
-      opportunities: recordsApi(rest, 'opportunities', Opportunity),
-    });
+    await use(apiFor(request, workspace.apiKey));
   },
   gql: async ({ request, workspace }, use) => {
-    const key = workspace.apiKey;
-    await use({
-      companies: graphqlRecordsApi(request, key, { singular: 'company', type: 'Company' }, Company),
-      people: graphqlRecordsApi(request, key, { singular: 'person', type: 'Person' }, Person),
-      opportunities: graphqlRecordsApi(
-        request,
-        key,
-        { singular: 'opportunity', type: 'Opportunity' },
-        Opportunity,
-      ),
-    });
+    await use(graphqlFor(request, workspace.apiKey));
+  },
+  roles: async ({ request, adminToken }, use) => {
+    const roles = new RolesApi(request, adminToken);
+    await use(roles);
+    await roles.removeAll();
   },
   anonymous: async ({ request }, use) => {
     await use(new RestClient(request));

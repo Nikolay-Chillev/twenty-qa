@@ -7,22 +7,23 @@ Defects and risks found while testing Twenty and its environment. Each finding i
 | # | Finding | Severity | Source | Status |
 |---|---|---|---|---|
 | [#17](https://github.com/Nikolay-Chillev/twenty-qa/issues/17) | A request without a token gets 403, an invalid token 401 | Minor | Product | Open, covered by the API smoke tests |
-| [#30](https://github.com/Nikolay-Chillev/twenty-qa/issues/30) | An amount with a currency code that does not exist is saved, and the app hides it | Major | Product | Open, reported upstream as [twentyhq/twenty#28761](https://github.com/twentyhq/twenty/issues/28761); covered by an expected failure |
+| [#30](https://github.com/Nikolay-Chillev/twenty-qa/issues/30) | An amount with a currency code that does not exist is saved, and the app hides it | Major | Product | Open, reported upstream as [twentyhq/twenty#28761](https://github.com/twentyhq/twenty/issues/28761) and fixed there by [twentyhq/twenty#29126](https://github.com/twentyhq/twenty/pull/29126), after 2.52.0; covered by an expected failure |
 | [#31](https://github.com/Nikolay-Chillev/twenty-qa/issues/31) | Database errors reach API clients with table, constraint and index names | Minor | Product | Open, covered by expected failures |
-| [#32](https://github.com/Nikolay-Chillev/twenty-qa/issues/32) | Phone numbers of any length are saved, and letters after the digits are cut off | Minor | Product | Open, reported upstream as [twentyhq/twenty#28764](https://github.com/twentyhq/twenty/issues/28764); covered by expected failures |
+| [#32](https://github.com/Nikolay-Chillev/twenty-qa/issues/32) | Phone numbers of any length are saved, and letters after the digits are cut off | Minor | Product | Open, reported upstream as [twentyhq/twenty#28764](https://github.com/twentyhq/twenty/issues/28764) and fixed there by [twentyhq/twenty#28770](https://github.com/twentyhq/twenty/pull/28770), after 2.52.0; covered by expected failures |
 | [#34](https://github.com/Nikolay-Chillev/twenty-qa/issues/34) | Deleting by filter over REST has no limit and is permanent by default | Major | Product | Open, reported upstream as [twentyhq/twenty#28762](https://github.com/twentyhq/twenty/issues/28762); covered by an expected failure |
 | [#54](https://github.com/Nikolay-Chillev/twenty-qa/issues/54) | A removed invitation still lets the person join while the invite link is on | Major | Product | Open, a risk rather than a plain defect (see the details); covered by an expected failure |
 | [#57](https://github.com/Nikolay-Chillev/twenty-qa/issues/57) | The sign-in page sometimes stays on its loader for good | Major | Product | Open, reported upstream as [twentyhq/twenty#29254](https://github.com/twentyhq/twenty/issues/29254); the suite reloads once and annotates the test |
+| [#65](https://github.com/Nikolay-Chillev/twenty-qa/issues/65) | A refusal for lack of permission is 400 over REST, not 403 | Minor | Product | Open, covered by an expected failure |
 
 ## Details
 
 ### #17 A request without a token gets 403, an invalid token 401
 
-Seen on 2.48.0 and again on 2.50.0. `GET /rest/companies` without an `Authorization` header answers `403 FORBIDDEN_EXCEPTION "Missing authentication token"`; the same request with `Bearer not-a-token` answers `401 UNAUTHENTICATED "Token invalid."`. Both requests lack valid credentials, so both should be 401; 403 is for a caller who is known but not allowed. A client that asks for credentials or refreshes its token on 401 does nothing when the token is missing. The smoke tests check both statuses as they are today.
+Seen on 2.48.0, 2.50.0 and 2.52.0. `GET /rest/companies` without an `Authorization` header answers `403 FORBIDDEN_EXCEPTION "Missing authentication token"`; the same request with `Bearer not-a-token` answers `401 UNAUTHENTICATED "Token invalid."`. Both requests lack valid credentials, so both should be 401; 403 is for a caller who is known but not allowed. A client that asks for credentials or refreshes its token on 401 does nothing when the token is missing. The smoke tests check both statuses as they are today.
 
 ### #30 An amount with a currency code that does not exist is saved, and the app hides it
 
-Seen on 2.48.0 and again on 2.50.0. Creating an opportunity with `amount: {amountMicros: 12500000000, currencyCode: "XYZ"}` answers 201 over REST and GraphQL, and the code is stored as sent. The record page then shows the Amount field empty, as if the deal had no value, while the same deal in EUR shows "12.5k". The API refuses other values that are not on a list, such as a stage ("Valid values are: NEW, SCREENING, …"), so a currency code outside ISO 4217 should be refused too; as it is, an integration or an import with a typo in the currency loses the deal's value in the app. Reported upstream as [twentyhq/twenty#28761](https://github.com/twentyhq/twenty/issues/28761).
+Seen on 2.48.0, 2.50.0 and 2.52.0. Creating an opportunity with `amount: {amountMicros: 12500000000, currencyCode: "XYZ"}` answers 201 over REST and GraphQL, and the code is stored as sent. The record page then shows the Amount field empty, as if the deal had no value, while the same deal in EUR shows "12.5k". The API refuses other values that are not on a list, such as a stage ("Valid values are: NEW, SCREENING, …"), so a currency code outside ISO 4217 should be refused too; as it is, an integration or an import with a typo in the currency loses the deal's value in the app. Reported upstream as [twentyhq/twenty#28761](https://github.com/twentyhq/twenty/issues/28761).
 
 | Currency `XYZ` | Currency `EUR` |
 |---|---|
@@ -30,19 +31,19 @@ Seen on 2.48.0 and again on 2.50.0. Creating an opportunity with `amount: {amoun
 
 ### #31 Database errors reach API clients with table, constraint and index names
 
-Seen on 2.48.0 and again on 2.50.0. A person linked to a company that does not exist gets `400 ["insert or update on table \"person\" violates foreign key constraint \"FK_ee066ddacfce46c9a7cb90edd1a\""]`; a second person with the same email gets `400 ["A duplicate entry was detected: unique constraint person.IDX_UNIQUE_87914cd3ce963115f8cb943e2ac was violated"]`. GraphQL returns the same text as `message` next to a friendly `userFriendlyMessage`; REST has only the raw text. The refusals are right, but they expose the database schema and do not name the field at fault.
+Seen on 2.48.0, 2.50.0 and 2.52.0. A person linked to a company that does not exist gets `400 ["insert or update on table \"person\" violates foreign key constraint \"FK_ee066ddacfce46c9a7cb90edd1a\""]`; a second person with the same email gets `400 ["A duplicate entry was detected: unique constraint person.IDX_UNIQUE_87914cd3ce963115f8cb943e2ac was violated"]`. GraphQL returns the same text as `message` next to a friendly `userFriendlyMessage`; REST has only the raw text. The refusals are right, but they expose the database schema and do not name the field at fault.
 
 ### #32 Phone numbers of any length are saved, and letters after the digits are cut off
 
-Seen on 2.48.0 and again on 2.50.0. A phone number is refused only when it has no digit at all (`abc`, `телефон`). With the Bulgarian calling code, `12` and `888` are saved, `08812345678901234` is saved with 16 digits (E.164 allows 15), and `088-ABC` is saved as `088` with the rest dropped and no warning. `+359 88 123 4567` is parsed correctly into `881234567`. Reported upstream as [twentyhq/twenty#28764](https://github.com/twentyhq/twenty/issues/28764).
+Seen on 2.48.0, 2.50.0 and 2.52.0. A phone number is refused only when it has no digit at all (`abc`, `телефон`). With the Bulgarian calling code, `12` and `888` are saved, `08812345678901234` is saved with 16 digits (E.164 allows 15), and `088-ABC` is saved as `088` with the rest dropped and no warning. `+359 88 123 4567` is parsed correctly into `881234567`. Reported upstream as [twentyhq/twenty#28764](https://github.com/twentyhq/twenty/issues/28764).
 
 ### #34 Deleting by filter over REST has no limit and is permanent by default
 
-Seen on 2.48.0 and again on 2.50.0. Updating companies by filter (`PATCH /rest/companies?filter=…`) refuses more than 200 matches ("Cannot update more than 200 records at once"), and a batch create refuses more than 200 records. Deleting by filter has no such limit: a filter that matched 311 companies deleted all of them in one request. REST deletes are also permanent unless `soft_delete=true` is sent; the OpenAPI document says so, but the app and GraphQL's `deleteCompany` move records to the trash, so the same word does two different things. The records deleted that way are not in the trash and cannot be restored. This suite's REST client sends `soft_delete=true` for a delete and leaves permanent deletes to `destroy()`. Reported upstream as [twentyhq/twenty#28762](https://github.com/twentyhq/twenty/issues/28762), with steps that delete 300 companies in one request.
+Seen on 2.48.0, 2.50.0 and 2.52.0. Updating companies by filter (`PATCH /rest/companies?filter=…`) refuses more than 200 matches ("Cannot update more than 200 records at once"), and a batch create refuses more than 200 records. Deleting by filter has no such limit: a filter that matched 311 companies deleted all of them in one request. REST deletes are also permanent unless `soft_delete=true` is sent; the OpenAPI document says so, but the app and GraphQL's `deleteCompany` move records to the trash, so the same word does two different things. The records deleted that way are not in the trash and cannot be restored. This suite's REST client sends `soft_delete=true` for a delete and leaves permanent deletes to `destroy()`. Reported upstream as [twentyhq/twenty#28762](https://github.com/twentyhq/twenty/issues/28762), with steps that delete 300 companies in one request.
 
 ### #54 A removed invitation still lets the person join while the invite link is on
 
-Seen on 2.50.1. Every invitation email links to `…/invite/<workspace invite hash>?inviteToken=…&email=…`.
+Seen on 2.50.1 and 2.52.0. Every invitation email links to `…/invite/<workspace invite hash>?inviteToken=…&email=…`.
 
 What happens with "Invite by link" left on, as a new workspace has it:
 - An admin removes the invitation, and it leaves the list of pending ones.
@@ -79,15 +80,20 @@ The likely cause is in the front end. `useGetPublicWorkspaceDataByDomain` is use
 
 A similar hang, right after signing out in the same browser, was fixed in [twentyhq/twenty#24254](https://github.com/twentyhq/twenty/issues/24254). The suite reloads a page that has not shown its form after 20 seconds, once, and annotates the test with #57, so the reports keep count. Reported upstream as [twentyhq/twenty#29254](https://github.com/twentyhq/twenty/issues/29254).
 
+### #65 A refusal for lack of permission is 400 over REST, not 403
+
+Seen on 2.52.0. When a role does not allow a request, REST answers `400 {"error":"Error","messages":["Entity performing the request does not have permission"],"code":"PERMISSION_DENIED"}`: for creating, changing or deleting a record, reading an object or a field the role may not read, filtering on a hidden field, and a member adding a webhook. GraphQL refuses the same requests as `FORBIDDEN`, and REST itself answers 403 for a revoked API key. 400 tells a client its request is malformed, so an integration logs a bug of its own instead of telling the user they lack a permission.
+
+The REST exception filter answers 400 for any error that is not an HTTP exception, with a comment that the default should be 500, and the REST handler has no case for the permissions error. The permission tests check the body's `PERMISSION_DENIED` code; one test expects 403 and is marked as an expected failure.
+
 ## To investigate
 
 - **After a sort, the page keeps the old reading order.** Since 2.50 a sort moves the table's rows on screen, but not in the page, until the view is saved or the page is reloaded. A screen reader follows the page, so it may read a sorted table in its old order (WCAG 1.3.2, meaningful sequence). To be checked with a screen reader and the accessibility scans (Quality milestone); see the item on #52 below.
 
-- **Permission errors are 400, not 403.** An API key whose role may only read gets `400 PERMISSION_DENIED "Entity performing the request does not have permission"` when it updates a company or reads a revoked object. To be confirmed in the permission tests (Access milestone) before it becomes a finding.
 - **The record table has no table semantics.** Rows and cells are plain elements without `table`, `row` or `cell` roles, and column headers are buttons, so a screen reader cannot tell which column a value belongs to. To be checked with the accessibility scans (Quality milestone).
 - **Negative deal amounts.** An opportunity of −5 EUR is accepted over REST. A credit or a refund could be a reason, but nothing in the app suggests deals are meant to be negative; to be checked with how the pipeline sums amounts.
 - **A new view goes first for everyone.** A view saved with "Save as new view" gets position 0, comes before "All Companies" in every member's list of views, and is what `/objects/companies` opens without a view id, for example in a new browser. The sidebar link keeps each browser's last view, so members who opened the table before are not affected. To be checked whether that order is intended.
-- **Deleting a shared view takes one click.** "Delete" in a view's menu removes the view for the whole workspace at once, without a confirmation and without a trash to restore it from. Whether a member may delete a view someone else saved is to be checked in the permission tests (Access milestone).
+- **Deleting a shared view takes one click.** "Delete" in a view's menu removes the view for the whole workspace at once, without a confirmation and without a trash to restore it from. Any member may do it to a view someone else saved: the Member role has the Views permission, through its access to all tools. A role without it is refused, so an admin can limit this; the API tests check both.
 - **The schema and the server disagree on the workspace name.** `SignUpInNewWorkspaceInput.displayName` is optional in the GraphQL schema, but `signUpInNewWorkspace` without it fails with "Workspace name is required". Minor: the app always sends a name.
 
 ## Checked, not a finding
