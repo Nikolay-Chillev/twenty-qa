@@ -41,14 +41,16 @@ export async function graphql<Data extends z.ZodType>(
   endpoint: GraphQLEndpoint,
   operation: Operation<Data>,
 ): Promise<z.output<Data>> {
+  // The suite authenticates with tokens only, so the web app's session cookie is dropped
+  // before and after the call. Sent, it makes Twenty treat the call as cookie-authenticated
+  // (refused without an Origin header) and signs in calls that are meant to be anonymous.
+  // A UI test's `request` starts with the cookie of its signed-in browser state, and
+  // signing in sets it again.
+  await request.clearCookies({ name: 'twenty-session' });
   const response = await request.post(endpoint, {
     data: { query: operation.query, variables: operation.variables ?? {} },
     headers: operation.token ? { Authorization: `Bearer ${operation.token}` } : {},
   });
-  // Signing in also sets a session cookie for the web app. The suite authenticates with
-  // tokens only, so the cookie is dropped: kept, it makes Twenty treat later calls as
-  // cookie-authenticated (refused without an Origin header), and it would sign in calls
-  // that are meant to be anonymous.
   await request.clearCookies({ name: 'twenty-session' });
   const body = Envelope.parse(await response.json());
   if (body.errors?.length) {
