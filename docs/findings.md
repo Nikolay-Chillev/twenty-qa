@@ -13,7 +13,7 @@ Defects and risks found while testing Twenty and its environment. Each finding i
 | [#34](https://github.com/Nikolay-Chillev/twenty-qa/issues/34) | Deleting by filter over REST has no limit and is permanent by default | Major | Product | Open, reported upstream as [twentyhq/twenty#28762](https://github.com/twentyhq/twenty/issues/28762); covered by an expected failure |
 | [#54](https://github.com/Nikolay-Chillev/twenty-qa/issues/54) | A removed invitation still lets the person join while the invite link is on | Major | Product | Open, a risk rather than a plain defect (see the details); covered by an expected failure |
 | [#57](https://github.com/Nikolay-Chillev/twenty-qa/issues/57) | The sign-in page sometimes stays on its loader for good | Major | Product | Open, reported upstream as [twentyhq/twenty#29254](https://github.com/twentyhq/twenty/issues/29254); the suite reloads once and annotates the test |
-| [#65](https://github.com/Nikolay-Chillev/twenty-qa/issues/65) | A refusal for lack of permission is 400 over REST, not 403 | Minor | Product | Open, covered by an expected failure |
+| [#65](https://github.com/Nikolay-Chillev/twenty-qa/issues/65) | A refusal for lack of permission is 400 over REST, not 403 | Minor | Product | Open, reported upstream as [twentyhq/twenty#29396](https://github.com/twentyhq/twenty/issues/29396); covered by an expected failure |
 
 ## Details
 
@@ -82,9 +82,9 @@ A similar hang, right after signing out in the same browser, was fixed in [twent
 
 ### #65 A refusal for lack of permission is 400 over REST, not 403
 
-Seen on 2.52.0. When a role does not allow a request, REST answers `400 {"error":"Error","messages":["Entity performing the request does not have permission"],"code":"PERMISSION_DENIED"}`: for creating, changing or deleting a record, reading an object or a field the role may not read, filtering on a hidden field, and a member adding a webhook. GraphQL refuses the same requests as `FORBIDDEN`, and REST itself answers 403 for a revoked API key. 400 tells a client its request is malformed, so an integration logs a bug of its own instead of telling the user they lack a permission.
+Seen on 2.52.0. When a role does not allow a request, REST answers `400 {"error":"Error","messages":["Entity performing the request does not have permission"],"code":"PERMISSION_DENIED"}`: for creating, changing or deleting a record, reading an object the role may not read, filtering on a hidden field or changing a field the role may not change, and a member adding a webhook. GraphQL refuses the same requests as `FORBIDDEN`, and REST itself answers 403 for a revoked API key. 400 tells a client its request is malformed, so an integration logs a bug of its own instead of telling the user they lack a permission.
 
-The REST exception filter answers 400 for any error that is not an HTTP exception, with a comment that the default should be 500, and the REST handler has no case for the permissions error. The permission tests check the body's `PERMISSION_DENIED` code; one test expects 403 and is marked as an expected failure.
+Twenty maps `PERMISSION_DENIED` to 403 in a filter of its own, but the filter is not reached. The records controller does not use it, and its general REST filter answers 400 for any error that is not an HTTP exception, with a comment that the default should be 500. The webhooks controller lists the permissions filter first, but NestJS tries filters in reverse order, so the general one, which catches everything, answers first. The permission tests check the body's `PERMISSION_DENIED` code; one test expects 403 and is marked as an expected failure. Reported upstream as [twentyhq/twenty#29396](https://github.com/twentyhq/twenty/issues/29396).
 
 ## To investigate
 
