@@ -14,7 +14,7 @@ Defects and risks found while testing Twenty and its environment. Each finding i
 | [#54](https://github.com/Nikolay-Chillev/twenty-qa/issues/54) | A removed invitation still lets the person join while the invite link is on | Major | Product | Open, a risk rather than a plain defect (see the details); covered by an expected failure |
 | [#57](https://github.com/Nikolay-Chillev/twenty-qa/issues/57) | The sign-in page sometimes stays on its loader for good | Major | Product | Open, reported upstream as [twentyhq/twenty#29254](https://github.com/twentyhq/twenty/issues/29254); the suite reloads once and annotates the test |
 | [#65](https://github.com/Nikolay-Chillev/twenty-qa/issues/65) | A refusal for lack of permission is 400 over REST, not 403 | Minor | Product | Open, reported upstream as [twentyhq/twenty#29396](https://github.com/twentyhq/twenty/issues/29396); covered by an expected failure |
-| [#68](https://github.com/Nikolay-Chillev/twenty-qa/issues/68) | A field a role may not see is listed on the record page as an empty field | Minor | Product | Open, covered by an expected failure |
+| [#68](https://github.com/Nikolay-Chillev/twenty-qa/issues/68) | A field a role may not see is listed on the record page as an empty field | Minor | Product | Open, reported upstream as [twentyhq/twenty#29397](https://github.com/twentyhq/twenty/issues/29397); covered by an expected failure |
 
 ## Details
 
@@ -91,7 +91,7 @@ Twenty maps `PERMISSION_DENIED` to 403 in a filter of its own, but the filter is
 
 Seen on 2.52.0. A role with no access to a company's Domain Name does not get that column in the table, nor the field among the filters and columns it can add. The record page still lists Domain Name, with its empty placeholder, exactly like a company without a domain. The value is not shown and the field cannot be edited, so nothing leaks, but the member reads the company as having no domain and may add a duplicate or report the data as missing. Twenty's permissions guide says a field with "No Access" is "completely hidden". The front end has a "Not shared" display with a lock for values hidden by record sharing, but the record page's field list does not use the field permissions, so the value is not fetched and the field shows as empty.
 
-Checked further: the same happens for six fields of four types (relation, currency, address and links on a company; phones and text on a person), each with a value. The role editor shows such a field with See and Edit unchecked, which is what unchecking See there sets. The files that draw a record's fields are the same in 2.54.0 and on main, apart from one unrelated relation dropdown, and no issue in twentyhq/twenty reports it.
+Checked further: the same happens for six fields of four types (relation, currency, address and links on a company; phones and text on a person), each with a value. The role editor shows such a field with See and Edit unchecked, which is what unchecking See there sets. The files that draw a record's fields are the same in 2.54.0 and on main, apart from one unrelated relation dropdown, and no issue in twentyhq/twenty reported it before. Reported upstream as [twentyhq/twenty#29397](https://github.com/twentyhq/twenty/issues/29397).
 
 ## To investigate
 
