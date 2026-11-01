@@ -22,7 +22,9 @@ async function waitForForm(page: Page, field: Locator): Promise<void> {
     type: 'issue',
     description: `${STUCK_ON_LOADER} (the page stayed on its loader and was reloaded)`,
   });
-  await page.reload();
+  // A slow page may move on by itself meanwhile, and Firefox then aborts the reload
+  // (NS_BINDING_ABORTED); what counts is that the form shows.
+  await page.reload().catch(() => undefined);
   await expect(field).toBeVisible({ timeout: PAGE_LOAD });
 }
 
