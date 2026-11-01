@@ -1,4 +1,10 @@
-import { type APIRequestContext, test as base, type Page } from '@playwright/test';
+import {
+  type APIRequestContext,
+  test as base,
+  type BrowserContext,
+  expect,
+  type Page,
+} from '@playwright/test';
 
 import { graphqlRecordsApi } from '../api/graphql-records';
 import { type CrudApi, recordsApi, type RecordsApi } from '../api/records';
@@ -27,6 +33,9 @@ import {
   Person,
   type PersonInput,
 } from '../schemas/records';
+import { Navigation } from '../ui/navigation';
+import { PAGE_LOAD } from '../ui/record-table';
+import { SignInPage } from '../ui/sign-in';
 
 export interface Api {
   rest: RestClient;
@@ -88,6 +97,11 @@ interface TestFixtures {
   newMember: TestUser;
   /** A second browser with no session, for someone who has no account yet. */
   guestPage: Page;
+  /**
+   * Gives `newMember` a role, e.g. one from `roles.create()`, and returns a browser signed
+   * in as them through the sign-in page, next to the admin's `page`.
+   */
+  signInWithRole: (roleId: string) => Promise<Page>;
   /**
    * Someone to invite: the test's mailbox. After the test, their pending invitations
    * are removed, and so is the member they became if they joined.
@@ -191,6 +205,23 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
     });
     await use(await context.newPage());
     await context.close();
+  },
+  signInWithRole: async ({ browser, request, roles, newMember, password, adminToken }, use) => {
+    const contexts: BrowserContext[] = [];
+    await use(async (roleId) => {
+      const token = await signInMember(request, password, adminToken, newMember);
+      await roles.assign(roleId, await memberIdOf(request, token));
+      const context = await browser.newContext({
+        baseURL: WORKSPACE_URL,
+        storageState: { cookies: [], origins: [] },
+      });
+      contexts.push(context);
+      const page = await context.newPage();
+      await new SignInPage(page, WORKSPACE_URL).signIn(newMember.email, password);
+      await expect(new Navigation(page).workspaceMenu).toBeVisible({ timeout: PAGE_LOAD });
+      return page;
+    });
+    for (const context of contexts) await context.close();
   },
   invitee: async ({ request, mailbox, adminToken }, use) => {
     await use(mailbox);
