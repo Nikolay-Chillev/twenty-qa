@@ -1,6 +1,12 @@
 import { expect, test as setup } from '@playwright/test';
 
-import { type Role, storageStateOf, USERS, WORKSPACE_URL } from '../../src/auth/users';
+import {
+  OTHER_WORKSPACE,
+  type Role,
+  storageStateOf,
+  USERS,
+  WORKSPACE_URL,
+} from '../../src/auth/users';
 import {
   apiKeyFor,
   readSavedWorkspace,
@@ -32,6 +38,21 @@ setup('create the workspace, a user per role and an API key', async ({ request }
     headers: { Authorization: `Bearer ${apiKey}` },
   });
   expect(probe.status(), 'the saved API key works').toBe(200);
+});
+
+setup("create another customer's workspace, with its admin and an API key", async ({ request }) => {
+  const adminToken = await signInAdmin(request, password(), OTHER_WORKSPACE);
+  const apiKey = await apiKeyFor(
+    request,
+    adminToken,
+    readSavedWorkspace(OTHER_WORKSPACE.file)?.apiKey,
+  );
+  saveWorkspace({ id: await workspaceIdOf(request, adminToken), apiKey }, OTHER_WORKSPACE.file);
+
+  const probe = await request.get('/rest/companies?limit=1', {
+    headers: { Authorization: `Bearer ${apiKey}` },
+  });
+  expect(probe.status(), "the other workspace's saved API key works").toBe(200);
 });
 
 for (const role of ['admin', 'member'] satisfies Role[]) {
