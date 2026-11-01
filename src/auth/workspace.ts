@@ -6,10 +6,10 @@ import { z } from 'zod';
 
 import { graphql } from '../api/graphql';
 import {
+  SUITE_WORKSPACE,
+  type Tenant,
   type TestUser,
   USERS,
-  WORKSPACE_NAME,
-  WORKSPACE_SUBDOMAIN,
   WORKSPACE_URL,
   workspaceFile,
 } from './users';
@@ -43,8 +43,13 @@ async function userExists(request: APIRequestContext, email: string): Promise<bo
   return data.checkUserExists.exists;
 }
 
-/** Signs in with a password and returns a login token for the suite's workspace, if a member. */
-async function signIn(request: APIRequestContext, user: TestUser, password: string) {
+/** Signs in with a password and returns a login token for the workspace at `url`, if a member. */
+async function signIn(
+  request: APIRequestContext,
+  user: TestUser,
+  password: string,
+  url = WORKSPACE_URL,
+) {
   const data = await graphql(request, '/metadata', {
     query: `mutation($email: String!, $password: String!) {
       signIn(email: $email, password: $password) {
@@ -72,20 +77,24 @@ async function signIn(request: APIRequestContext, user: TestUser, password: stri
   return {
     workspaceAgnosticToken: data.signIn.tokens.accessOrWorkspaceAgnosticToken.token,
     loginToken: data.signIn.availableWorkspaces.availableWorkspacesForSignIn.find(
-      (workspace) => new URL(workspace.workspaceUrls.subdomainUrl).origin === WORKSPACE_URL,
+      (workspace) => new URL(workspace.workspaceUrls.subdomainUrl).origin === url,
     )?.loginToken,
   };
 }
 
 /** Exchanges a login token for an access token; Twenty only accepts the workspace's own address as the origin. */
-async function accessTokenFrom(request: APIRequestContext, loginToken: string): Promise<string> {
+async function accessTokenFrom(
+  request: APIRequestContext,
+  loginToken: string,
+  origin = WORKSPACE_URL,
+): Promise<string> {
   const data = await graphql(request, '/metadata', {
     query: `mutation($loginToken: String!, $origin: String!) {
       getAuthTokensFromLoginToken(loginToken: $loginToken, origin: $origin) {
         tokens { accessOrWorkspaceAgnosticToken { token } }
       }
     }`,
-    variables: { loginToken, origin: WORKSPACE_URL },
+    variables: { loginToken, origin },
     data: z.object({ getAuthTokensFromLoginToken: z.object({ tokens: TokenPair }) }),
   });
   return data.getAuthTokensFromLoginToken.tokens.accessOrWorkspaceAgnosticToken.token;
@@ -152,14 +161,21 @@ async function completeOnboarding(
   throw new Error(`${user.email}: onboarding did not complete`);
 }
 
-/** Signs in the admin, creating the user and the workspace on a fresh environment. */
-export async function signInAdmin(request: APIRequestContext, password: string): Promise<string> {
-  const admin = USERS.admin;
+/**
+ * Signs in a workspace's admin, creating the user and the workspace on a fresh
+ * environment: the suite's workspace unless another is given.
+ */
+export async function signInAdmin(
+  request: APIRequestContext,
+  password: string,
+  tenant: Tenant = SUITE_WORKSPACE,
+): Promise<string> {
+  const admin = tenant.admin;
   let loginToken: string | null | undefined;
   let workspaceAgnosticToken: string;
 
   if (await userExists(request, admin.email)) {
-    ({ loginToken, workspaceAgnosticToken } = await signIn(request, admin, password));
+    ({ loginToken, workspaceAgnosticToken } = await signIn(request, admin, password, tenant.url));
   } else {
     const data = await graphql(request, '/metadata', {
       query: `mutation($email: String!, $password: String!) {
@@ -179,19 +195,19 @@ export async function signInAdmin(request: APIRequestContext, password: string):
       query: `mutation($input: SignUpInNewWorkspaceInput) {
         signUpInNewWorkspace(input: $input) { loginToken { token } }
       }`,
-      variables: { input: { displayName: WORKSPACE_NAME, subdomain: WORKSPACE_SUBDOMAIN } },
+      variables: { input: { displayName: tenant.name, subdomain: tenant.subdomain } },
       token: workspaceAgnosticToken,
       data: z.object({ signUpInNewWorkspace: z.object({ loginToken: Token }) }),
     });
     loginToken = data.signUpInNewWorkspace.loginToken.token;
   }
 
-  const token = await accessTokenFrom(request, loginToken);
+  const token = await accessTokenFrom(request, loginToken, tenant.url);
   const me = await currentUser(request, token);
   if (me.currentWorkspace.activationStatus !== 'ACTIVE') {
     await graphql(request, '/metadata', {
       query: `mutation($input: ActivateWorkspaceInput!) { activateWorkspace(data: $input) { id } }`,
-      variables: { input: { displayName: WORKSPACE_NAME } },
+      variables: { input: { displayName: tenant.name } },
       token,
       data: z.object({ activateWorkspace: z.object({ id: z.string() }) }),
     });
@@ -305,13 +321,14 @@ export async function removeFromWorkspace(
   });
 }
 
-export function readSavedWorkspace(): SavedWorkspace | undefined {
-  if (!existsSync(workspaceFile)) return undefined;
-  const parsed = SavedWorkspace.safeParse(JSON.parse(readFileSync(workspaceFile, 'utf8')));
+/** The id and API key of a workspace, as the setup project saved them. */
+export function readSavedWorkspace(file = workspaceFile): SavedWorkspace | undefined {
+  if (!existsSync(file)) return undefined;
+  const parsed = SavedWorkspace.safeParse(JSON.parse(readFileSync(file, 'utf8')));
   return parsed.success ? parsed.data : undefined;
 }
 
-export function saveWorkspace(workspace: SavedWorkspace): void {
-  mkdirSync(path.dirname(workspaceFile), { recursive: true });
-  writeFileSync(workspaceFile, JSON.stringify(workspace, null, 2));
+export function saveWorkspace(workspace: SavedWorkspace, file = workspaceFile): void {
+  mkdirSync(path.dirname(file), { recursive: true });
+  writeFileSync(file, JSON.stringify(workspace, null, 2));
 }

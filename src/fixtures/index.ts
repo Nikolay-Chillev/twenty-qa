@@ -12,7 +12,7 @@ import { RestClient } from '../api/rest';
 import { ViewsApi } from '../api/views';
 import { listInvitations, membershipOf, removeInvitation } from '../auth/invitations';
 import { RolesApi } from '../auth/roles';
-import { storageStateOf, type TestUser, WORKSPACE_URL } from '../auth/users';
+import { OTHER_WORKSPACE, storageStateOf, type TestUser, WORKSPACE_URL } from '../auth/users';
 import {
   memberIdOf,
   readSavedWorkspace,
@@ -112,6 +112,8 @@ interface TestFixtures {
 interface WorkerFixtures {
   /** The workspace and API key the setup project saved. */
   workspace: SavedWorkspace;
+  /** Another customer's workspace and its API key, also made by the setup project. */
+  otherWorkspace: SavedWorkspace;
   /** An access token of the admin, for /metadata calls an API key may not make. */
   adminToken: string;
   /** An access token of the member, the user with the built-in Member role. */
@@ -126,6 +128,15 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
     async ({}, use) => {
       const saved = readSavedWorkspace();
       if (!saved) throw new Error('No saved workspace; run the setup project first');
+      await use(saved);
+    },
+    { scope: 'worker' },
+  ],
+  otherWorkspace: [
+    // eslint-disable-next-line no-empty-pattern -- Playwright requires the destructuring
+    async ({}, use) => {
+      const saved = readSavedWorkspace(OTHER_WORKSPACE.file);
+      if (!saved) throw new Error('No saved other workspace; run the setup project first');
       await use(saved);
     },
     { scope: 'worker' },

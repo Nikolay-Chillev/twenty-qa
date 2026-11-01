@@ -30,3 +30,37 @@ export const storageStateOf = (role: Role): string => path.join(authDir, `${role
 
 /** Workspace id and API key, saved by the setup project. */
 export const workspaceFile = path.join(authDir, 'workspace.json');
+
+/** A customer's workspace on its own subdomain, with the admin who owns it. */
+export interface Tenant {
+  name: string;
+  subdomain: string;
+  /** Where its app lives, e.g. http://qa.localhost:3000 */
+  url: string;
+  admin: TestUser;
+  /** Where the setup project saves its id and API key. */
+  file: string;
+}
+
+/** The workspace the suite tests. */
+export const SUITE_WORKSPACE: Tenant = {
+  name: WORKSPACE_NAME,
+  subdomain: WORKSPACE_SUBDOMAIN,
+  url: WORKSPACE_URL,
+  admin: USERS.admin,
+  file: workspaceFile,
+};
+
+/** Another customer's workspace, which nothing of the suite's workspace may reach. */
+export const OTHER_WORKSPACE: Tenant = {
+  name: 'Other Workspace',
+  subdomain: 'other',
+  url: workspaceUrl(config.TWENTY_URL, 'other'),
+  admin: {
+    role: 'admin',
+    email: 'other-admin@example.com',
+    firstName: 'Петя',
+    lastName: 'Стоянова',
+  },
+  file: path.join(authDir, 'other-workspace.json'),
+};
