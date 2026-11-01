@@ -3,7 +3,7 @@ import { z } from 'zod';
 
 import { graphql } from '../api/graphql';
 import { signInForTokens } from './tokens';
-import { base32Bytes, secretOf, totpCode } from './totp';
+import { base32Bytes, previousStepCode, secretOf } from './totp';
 import type { TestUser } from './users';
 
 // Two-factor sign-in with an authenticator app, set up as the profile's "Authenticator
@@ -47,8 +47,8 @@ export async function confirmTwoFactorSetup(
 
 /**
  * Turns on two-factor sign-in for a member; returns the key of their authenticator app.
- * The setup takes the code of the previous 30-second step, which Twenty still accepts,
- * so the current code is new to Twenty when the test signs in with it.
+ * The setup takes the previous step's code, so the current code is new to Twenty when
+ * the test signs in with it.
  */
 export async function turnOnTwoFactor(
   request: APIRequestContext,
@@ -57,6 +57,6 @@ export async function turnOnTwoFactor(
 ): Promise<Buffer> {
   const { access } = await signInForTokens(request, member, password);
   const key = base32Bytes(await startTwoFactorSetup(request, access));
-  await confirmTwoFactorSetup(request, access, totpCode(key, new Date(Date.now() - 30_000)));
+  await confirmTwoFactorSetup(request, access, await previousStepCode(key));
   return key;
 }

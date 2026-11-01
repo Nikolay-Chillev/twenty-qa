@@ -30,6 +30,19 @@ export function totpCode(key: Buffer, at: Date = new Date(), digits = 6): string
   return String(code).padStart(digits, '0');
 }
 
+/**
+ * The code of the previous 30-second step, which Twenty still accepts, so that a later
+ * code is new to it. It is made once at least `margin` seconds are left in the current
+ * step: sent within that margin, it is still one step behind the server's, not two.
+ */
+export async function previousStepCode(key: Buffer, margin = 10): Promise<string> {
+  const left = 30 - ((Date.now() / 1000) % 30);
+  if (left < margin) {
+    await new Promise((resolve) => setTimeout(resolve, left * 1000 + 100));
+  }
+  return totpCode(key, new Date(Date.now() - 30_000));
+}
+
 /** The secret of an `otpauth://totp/…?secret=…` URI, as an authenticator app reads it. */
 export function secretOf(uri: string): string {
   const secret = new URL(uri).searchParams.get('secret');

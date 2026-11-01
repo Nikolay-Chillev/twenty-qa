@@ -1,4 +1,4 @@
-import { base32Bytes, totpCode } from '../../src/auth/totp';
+import { base32Bytes, previousStepCode, totpCode } from '../../src/auth/totp';
 import { turnOnTwoFactor } from '../../src/auth/two-factor';
 import { WORKSPACE_URL } from '../../src/auth/users';
 import { expect, test } from '../../src/fixtures';
@@ -15,12 +15,14 @@ test.describe('two-factor sign-in', () => {
     newMember,
     password,
   }) => {
+    // Two sign-ins in the browser, and maybe a wait for the next 30-second step.
+    test.slow();
     const page = await signInWithRole(await roles.idOf('Member'));
     const setup = new TwoFactorSetupPage(page);
     const key = base32Bytes(await setup.open());
-    // The previous step's code, which Twenty still accepts, so the current one is new
-    // when the member signs in with it.
-    await setup.confirm(totpCode(key, new Date(Date.now() - 30_000)));
+    // The previous step's code, so the current one is new when the member signs in with
+    // it; with 15 seconds left in the step for typing and saving it.
+    await setup.confirm(await previousStepCode(key, 15));
     await expect(page.getByRole('link', { name: 'Authenticator App Active' })).toBeVisible();
 
     const signIn = new SignInPage(guestPage, WORKSPACE_URL);
@@ -31,6 +33,8 @@ test.describe('two-factor sign-in', () => {
   });
 
   test('a wrong code keeps the member out', async ({ request, guestPage, newMember, password }) => {
+    // The setup may wait for the next 30-second step.
+    test.slow();
     await turnOnTwoFactor(request, newMember, password);
     const signIn = new SignInPage(guestPage, WORKSPACE_URL);
     await signIn.signIn(newMember.email, password);
