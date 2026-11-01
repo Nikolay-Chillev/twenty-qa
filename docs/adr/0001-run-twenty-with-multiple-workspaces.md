@@ -30,7 +30,7 @@ Run the test environment in multi-workspace mode, as Twenty's cloud does:
 
 ## Consequences
 
-- Tenant isolation can be tested through the API and in the browser against a real second workspace (Access milestone).
+- Tenant isolation can be tested through the API and in the browser against a real second workspace (Access milestone). The setup project creates `Other Workspace` on `http://other.localhost:3000` for it, and the checks above by hand are now `tests/api/isolation.spec.ts` and `tests/ui/isolation.spec.ts`.
 - Sign-in and token exchange must use the workspace's address; the bootstrap code does, and picks the suite's workspace when a user belongs to several.
 - Open workspace creation is a deviation from Twenty's self-hosted default, listed in the README.
 - If a CI runner cannot resolve `*.localhost`, an `/etc/hosts` entry for `qa.localhost` is the fallback.

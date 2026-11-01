@@ -82,6 +82,7 @@ Twenty has no seed command in production mode, so the `setup` project creates ev
 | Member (joined through the invite link) | `member@example.com`, Георги Петров |
 | Password of both | `TWENTY_PASSWORD`, generated into `.env` by `scripts/start.sh` |
 | API key with the Admin role | saved with the workspace id in `playwright/.auth/workspace.json` |
+| Another customer's workspace, for the isolation tests | `Other Workspace` on `http://other.localhost:3000`, owned by `other-admin@example.com`, Петя Стоянова; its id and an API key with its Admin role in `playwright/.auth/other-workspace.json` |
 
 Both users are taken through onboarding and signed in once in the browser; their state is saved in `playwright/.auth/`, so UI tests open the app already signed in (as the admin, unless a test picks another role). Runs against an existing environment reuse the users, the workspace and a working API key.
 
@@ -91,6 +92,7 @@ Tests import `test` and `expect` from [`src/fixtures`](src/fixtures/index.ts), w
 
 | Fixture | What it gives a test |
 |---|---|
+| `otherWorkspace` | The id and API key of another customer's workspace, for the isolation tests; `apiFor()` gives its records API |
 | `api` | REST clients for companies, people and opportunities with the suite's API key: CRUD, trash and restore, lists with filters and paging, bulk operations; every response is checked against a Zod schema in [`src/schemas`](src/schemas/records.ts) |
 | `gql` | The same records through GraphQL; each query asks for exactly the fields its schema checks |
 | `anonymous` | The REST API without credentials |
