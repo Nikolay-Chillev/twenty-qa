@@ -149,11 +149,14 @@ export class RolesApi {
     );
   }
 
-  /** A new API key with the role, as "Create API key" in the settings makes one. */
-  async apiKey(roleId: string): Promise<ApiKey> {
+  /**
+   * A new API key with the role, as "Create API key" in the settings makes one; it never
+   * expires unless `expiresAt` is given.
+   */
+  async apiKey(roleId: string, expiresAt = FAR_FUTURE): Promise<ApiKey> {
     const { createApiKey } = await this.call(
       'mutation($input: CreateApiKeyInput!) { createApiKey(input: $input) { id } }',
-      { input: { name: 'twenty-qa role test', expiresAt: FAR_FUTURE, roleId } },
+      { input: { name: 'twenty-qa role test', expiresAt, roleId } },
       z.object({ createApiKey: z.object({ id: z.uuid() }) }),
     );
     this.keys.push(createApiKey.id);
@@ -161,7 +164,7 @@ export class RolesApi {
       `mutation($apiKeyId: UUID!, $expiresAt: String!) {
         generateApiKeyToken(apiKeyId: $apiKeyId, expiresAt: $expiresAt) { token }
       }`,
-      { apiKeyId: createApiKey.id, expiresAt: FAR_FUTURE },
+      { apiKeyId: createApiKey.id, expiresAt },
       z.object({ generateApiKeyToken: z.object({ token: z.string() }) }),
     );
     return { id: createApiKey.id, token: generateApiKeyToken.token };

@@ -1,4 +1,6 @@
-import type { Locator, Page } from '@playwright/test';
+import { expect, type Locator, type Page } from '@playwright/test';
+
+import { PAGE_LOAD } from './record-table';
 
 /**
  * Settings, at /settings/<section>. Its sidebar lists the sections the user's role may
@@ -15,5 +17,27 @@ export class SettingsPage {
   /** Opens a section by its address, e.g. `members` or `developers/apis/new`. */
   async open(path: string): Promise<void> {
     await this.page.goto(`/settings/${path}`);
+  }
+
+  /**
+   * On the profile, the menus of the devices with a session on the account, except this
+   * one, which has none.
+   */
+  get otherDevices(): Locator {
+    return this.page.getByRole('button', { name: 'More options' });
+  }
+
+  /** Logs out every other device from the profile's list of devices, one by one. */
+  async logOutOtherDevices(): Promise<void> {
+    await this.open('profile');
+    await expect(this.page.getByRole('heading', { name: 'Devices' })).toBeVisible({
+      timeout: PAGE_LOAD,
+    });
+    await expect(this.otherDevices.first()).toBeVisible();
+    for (let left = await this.otherDevices.count(); left > 0; left--) {
+      await this.otherDevices.first().click();
+      await this.page.getByRole('menuitem', { name: 'Log out' }).click();
+      await expect(this.otherDevices).toHaveCount(left - 1);
+    }
   }
 }

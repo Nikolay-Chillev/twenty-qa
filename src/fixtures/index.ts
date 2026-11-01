@@ -200,12 +200,11 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
   },
   newMember: async ({ request, mailbox, adminToken, password }, use) => {
     const user: TestUser = { role: 'member', email: mailbox.address, ...personName() };
-    const memberId = await memberIdOf(
-      request,
-      await signInMember(request, password, adminToken, user),
-    );
+    await signInMember(request, password, adminToken, user);
     await use(user);
-    await removeFromWorkspace(request, adminToken, memberId);
+    // The test may have taken the member out itself.
+    const membership = await membershipOf(request, adminToken, user.email);
+    if (membership) await removeFromWorkspace(request, adminToken, membership.memberId);
   },
   guestPage: async ({ browser }, use) => {
     // An empty state of its own: a context made in a test otherwise takes the
