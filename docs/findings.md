@@ -14,6 +14,7 @@ Defects and risks found while testing Twenty and its environment. Each finding i
 | [#54](https://github.com/Nikolay-Chillev/twenty-qa/issues/54) | A removed invitation still lets the person join while the invite link is on | Major | Product | Open, a risk rather than a plain defect (see the details); covered by an expected failure |
 | [#57](https://github.com/Nikolay-Chillev/twenty-qa/issues/57) | The sign-in page sometimes stays on its loader for good | Major | Product | Open, reported upstream as [twentyhq/twenty#29254](https://github.com/twentyhq/twenty/issues/29254); the suite reloads once and annotates the test |
 | [#65](https://github.com/Nikolay-Chillev/twenty-qa/issues/65) | A refusal for lack of permission is 400 over REST, not 403 | Minor | Product | Open, reported upstream as [twentyhq/twenty#29396](https://github.com/twentyhq/twenty/issues/29396); covered by an expected failure |
+| [#68](https://github.com/Nikolay-Chillev/twenty-qa/issues/68) | A field a role may not see is listed on the record page as an empty field | Minor | Product | Open, covered by an expected failure |
 
 ## Details
 
@@ -86,6 +87,10 @@ Seen on 2.52.0. When a role does not allow a request, REST answers `400 {"error"
 
 Twenty maps `PERMISSION_DENIED` to 403 in a filter of its own, but the filter is not reached. The records controller does not use it, and its general REST filter answers 400 for any error that is not an HTTP exception, with a comment that the default should be 500. The webhooks controller lists the permissions filter first, but NestJS tries filters in reverse order, so the general one, which catches everything, answers first. The permission tests check the body's `PERMISSION_DENIED` code; one test expects 403 and is marked as an expected failure. Reported upstream as [twentyhq/twenty#29396](https://github.com/twentyhq/twenty/issues/29396).
 
+### #68 A field a role may not see is listed on the record page as an empty field
+
+Seen on 2.52.0. A role with no access to a company's Domain Name does not get that column in the table, nor the field among the filters and columns it can add. The record page still lists Domain Name, with its empty placeholder, exactly like a company without a domain. The value is not shown and the field cannot be edited, so nothing leaks, but the member reads the company as having no domain and may add a duplicate or report the data as missing. Twenty's permissions guide says a field with "No Access" is "completely hidden". The front end has a "Not shared" display with a lock for values hidden by record sharing, but the record page's field list does not use the field permissions, on main either.
+
 ## To investigate
 
 - **After a sort, the page keeps the old reading order.** Since 2.50 a sort moves the table's rows on screen, but not in the page, until the view is saved or the page is reloaded. A screen reader follows the page, so it may read a sorted table in its old order (WCAG 1.3.2, meaningful sequence). To be checked with a screen reader and the accessibility scans (Quality milestone); see the item on #52 below.
@@ -93,7 +98,7 @@ Twenty maps `PERMISSION_DENIED` to 403 in a filter of its own, but the filter is
 - **The record table has no table semantics.** Rows and cells are plain elements without `table`, `row` or `cell` roles, and column headers are buttons, so a screen reader cannot tell which column a value belongs to. To be checked with the accessibility scans (Quality milestone).
 - **Negative deal amounts.** An opportunity of −5 EUR is accepted over REST. A credit or a refund could be a reason, but nothing in the app suggests deals are meant to be negative; to be checked with how the pipeline sums amounts.
 - **A new view goes first for everyone.** A view saved with "Save as new view" gets position 0, comes before "All Companies" in every member's list of views, and is what `/objects/companies` opens without a view id, for example in a new browser. The sidebar link keeps each browser's last view, so members who opened the table before are not affected. To be checked whether that order is intended.
-- **Deleting a shared view takes one click.** "Delete" in a view's menu removes the view for the whole workspace at once, without a confirmation and without a trash to restore it from. Any member may do it to a view someone else saved: the Member role has the Views permission, through its access to all tools. A role without it is refused, so an admin can limit this; the API tests check both.
+- **Deleting a shared view takes one click.** "Delete" in a view's menu removes the view for the whole workspace at once, without a confirmation and without a trash to restore it from. Any member may do it to a view someone else saved: the Member role has the Views permission, through its access to all tools. A role without it is refused, and its menu of a shared view offers neither Edit nor Delete, so an admin can limit this; the API and UI tests check both.
 - **The schema and the server disagree on the workspace name.** `SignUpInNewWorkspaceInput.displayName` is optional in the GraphQL schema, but `signUpInNewWorkspace` without it fails with "Workspace name is required". Minor: the app always sends a name.
 
 ## Checked, not a finding
