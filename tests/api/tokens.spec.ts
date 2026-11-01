@@ -72,12 +72,17 @@ test.describe('tokens', () => {
   });
 
   test('an API key stops working once it expires', async ({ request, roles }) => {
-    const soon = new Date(Date.now() + 5_000).toISOString();
-    const key = await roles.apiKey(await roles.create(), soon);
+    // The key lives 10 seconds, then the test waits for it to expire.
+    test.slow();
+    const role = await roles.create();
+    // Counted from now, after the role, so a slow runner still has time to make the
+    // key and use it once.
+    const expiresAt = new Date(Date.now() + 10_000).toISOString();
+    const key = await roles.apiKey(role, expiresAt);
 
     expect(await restAnswer(apiFor(request, key.token))).toEqual({ status: 200 });
     await expect
-      .poll(() => restAnswer(apiFor(request, key.token)), { timeout: 20_000 })
+      .poll(() => restAnswer(apiFor(request, key.token)), { timeout: 30_000 })
       .toEqual({ status: 401, messages: ['Token has expired.'] });
   });
 
