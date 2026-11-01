@@ -15,7 +15,7 @@ Defects and risks found while testing Twenty and its environment. Each finding i
 | [#57](https://github.com/Nikolay-Chillev/twenty-qa/issues/57) | The sign-in page sometimes stays on its loader for good | Major | Product | Open, reported upstream as [twentyhq/twenty#29254](https://github.com/twentyhq/twenty/issues/29254); the suite reloads once and annotates the test |
 | [#65](https://github.com/Nikolay-Chillev/twenty-qa/issues/65) | A refusal for lack of permission is 400 over REST, not 403 | Minor | Product | Open, reported upstream as [twentyhq/twenty#29396](https://github.com/twentyhq/twenty/issues/29396); covered by an expected failure |
 | [#68](https://github.com/Nikolay-Chillev/twenty-qa/issues/68) | A field a role may not see is listed on the record page as an empty field | Minor | Product | Open, reported upstream as [twentyhq/twenty#29397](https://github.com/twentyhq/twenty/issues/29397); covered by an expected failure |
-| [#74](https://github.com/Nikolay-Chillev/twenty-qa/issues/74) | A two-factor code can be used to sign in more than once | Minor | Product | Open, covered by an expected failure |
+| [#74](https://github.com/Nikolay-Chillev/twenty-qa/issues/74) | A two-factor code can be used to sign in more than once | Minor | Product | Open, reported upstream as [twentyhq/twenty#29400](https://github.com/twentyhq/twenty/issues/29400); covered by an expected failure |
 
 ## Details
 
@@ -96,7 +96,7 @@ Checked further: the same happens for six fields of four types (relation, curren
 
 ### #74 A two-factor code can be used to sign in more than once
 
-Seen on 2.52.0. A code from the authenticator app that was already used to sign in is accepted again: two sign-ins with the same password and the same code both get working tokens. Twenty accepts a code one 30-second step either side of its own, so a code that someone has seen stays usable until the end of the step after it: 30 to 60 seconds from when it was shown. RFC 6238 says the verifier "MUST NOT accept the second attempt of the OTP after the successful validation has been issued for the first OTP". The TOTP strategy checks a code against the secret only and keeps no record of the last step it accepted, on main too. Someone who sees a code being typed, or reads it with the password from a log or a keylogger, can use it again while it is valid. The other two-factor tests sign in with a code the setup did not use, so they do not rely on this.
+Seen on 2.52.0. A code from the authenticator app that was already used to sign in is accepted again: two sign-ins with the same password and the same code both get working tokens. Twenty accepts a code one 30-second step either side of its own, so a code that someone has seen stays usable until the end of the step after it: 30 to 60 seconds from when it was shown. RFC 6238 says the verifier "MUST NOT accept the second attempt of the OTP after the successful validation has been issued for the first OTP". The TOTP strategy checks a code against the secret only and keeps no record of the last step it accepted, on main too. Someone who sees a code being typed, or reads it with the password from a log or a keylogger, can use it again while it is valid. The other two-factor tests sign in with a code the setup did not use, so they do not rely on this. Reported upstream as [twentyhq/twenty#29400](https://github.com/twentyhq/twenty/issues/29400).
 
 ## To investigate
 
