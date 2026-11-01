@@ -23,12 +23,16 @@ const pairOf = (tokens: z.infer<typeof Tokens>): TokenPair => ({
   refresh: tokens.refreshToken.token,
 });
 
-/** Signs a user in to the suite's workspace with a password and returns their tokens. */
-export async function signInForTokens(
+/**
+ * The first step of signing in to the suite's workspace with a password: a short-lived
+ * login token, exchanged for the tokens next, with a one-time code if the user has
+ * two-factor authentication.
+ */
+export async function loginTokenFor(
   request: APIRequestContext,
   user: TestUser,
   password: string,
-): Promise<TokenPair> {
+): Promise<string> {
   const { getLoginTokenFromCredentials } = await graphql(request, '/metadata', {
     query: `mutation($email: String!, $password: String!, $origin: String!) {
       getLoginTokenFromCredentials(email: $email, password: $password, origin: $origin) {
@@ -38,16 +42,51 @@ export async function signInForTokens(
     variables: { email: user.email, password, origin: WORKSPACE_URL },
     data: z.object({ getLoginTokenFromCredentials: z.object({ loginToken: Token }) }),
   });
+  return getLoginTokenFromCredentials.loginToken.token;
+}
+
+/** Exchanges a login token for the user's tokens, as for a user without two-factor sign-in. */
+export async function tokensFromLoginToken(
+  request: APIRequestContext,
+  loginToken: string,
+): Promise<TokenPair> {
   const { getAuthTokensFromLoginToken } = await graphql(request, '/metadata', {
     query: `mutation($loginToken: String!, $origin: String!) {
       getAuthTokensFromLoginToken(loginToken: $loginToken, origin: $origin) {
         tokens { accessOrWorkspaceAgnosticToken { token } refreshToken { token } }
       }
     }`,
-    variables: { loginToken: getLoginTokenFromCredentials.loginToken.token, origin: WORKSPACE_URL },
+    variables: { loginToken, origin: WORKSPACE_URL },
     data: z.object({ getAuthTokensFromLoginToken: z.object({ tokens: Tokens }) }),
   });
   return pairOf(getAuthTokensFromLoginToken.tokens);
+}
+
+/** Exchanges a login token and a one-time code for the user's tokens. */
+export async function tokensFromCode(
+  request: APIRequestContext,
+  loginToken: string,
+  code: string,
+): Promise<TokenPair> {
+  const { getAuthTokensFromOTP } = await graphql(request, '/metadata', {
+    query: `mutation($loginToken: String!, $otp: String!, $origin: String!) {
+      getAuthTokensFromOTP(loginToken: $loginToken, otp: $otp, origin: $origin) {
+        tokens { accessOrWorkspaceAgnosticToken { token } refreshToken { token } }
+      }
+    }`,
+    variables: { loginToken, otp: code, origin: WORKSPACE_URL },
+    data: z.object({ getAuthTokensFromOTP: z.object({ tokens: Tokens }) }),
+  });
+  return pairOf(getAuthTokensFromOTP.tokens);
+}
+
+/** Signs a user in to the suite's workspace with a password and returns their tokens. */
+export async function signInForTokens(
+  request: APIRequestContext,
+  user: TestUser,
+  password: string,
+): Promise<TokenPair> {
+  return tokensFromLoginToken(request, await loginTokenFor(request, user, password));
 }
 
 /** Exchanges a refresh token for a new pair, as the app does when its access token expires. */
