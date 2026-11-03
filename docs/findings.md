@@ -119,6 +119,7 @@ Seen on 2.52.0. A role that may only read opportunities gets no "+ New" in the c
 
 ## Checked, not a finding
 
+- **A search of every object is refused for a role that may not read one of them.** Seen on 2.52.0. `search` without a list of objects, for a role without access to companies, answers "Entity performing the request does not have permission". The same search limited to the objects the role may read finds their records, and that is what the app asks for: in the command menu such a member finds people and never companies. An integration with such a key has to name the objects it searches. Strict, but not wrong: the API tests check both.
 - **The sign-in form tells whether an address has an account.**
   - An unknown address is offered to sign up instead of sign in, and a wrong password gets "Wrong password.".
   - Twenty chose clear feedback over generic messages, with rate limits as the protection ([twentyhq/twenty#3564](https://github.com/twentyhq/twenty/issues/3564)). Throttling sign-in is a feature request for now, and a captcha can be turned on instead ([twentyhq/twenty#26524](https://github.com/twentyhq/twenty/issues/26524)).
