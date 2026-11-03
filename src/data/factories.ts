@@ -17,6 +17,22 @@ const CITIES = ['София', 'Пловдив', 'Варна', 'Бургас', '�
 /** A short random tag that keeps names unique across parallel tests. */
 const tag = (): string => randomUUID().slice(0, 8);
 
+// Sixteen Cyrillic letters, one per hex digit; the first eight look like Latin ones.
+const WORD_LETTERS = 'аеоруксхбгджзлпф';
+
+/**
+ * A made-up Cyrillic word no other record has, e.g. "Жъгаркслбо": a search for it
+ * finds only this test's records, also by its first letters.
+ */
+export function uniqueWord(): string {
+  const letters = randomUUID()
+    .replaceAll('-', '')
+    .slice(0, 8)
+    .split('')
+    .map((digit) => WORD_LETTERS[parseInt(digit, 16)] ?? '');
+  return `Жъ${letters.join('')}`;
+}
+
 export function personName(): { firstName: string; lastName: string } {
   const female = faker.datatype.boolean();
   const surname = faker.helpers.arrayElement(SURNAMES);
