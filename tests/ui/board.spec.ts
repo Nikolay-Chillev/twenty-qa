@@ -93,9 +93,9 @@ test.describe('the opportunities board', () => {
     await api.opportunities.create(opportunityInput({ name: `${tag} втора`, stage: 'MEETING' }));
     const viewId = await byStage(views);
     const board = await new RecordBoard(page, 'opportunities', COLUMNS).open(viewId, tag);
-    const ids = await board.idsIn('Meeting');
-    expect(ids).toHaveLength(2);
-    const [top = '', bottom = ''] = ids;
+    // The headers can show before the cards do.
+    await expect.poll(() => board.idsIn('Meeting')).toHaveLength(2);
+    const [top = '', bottom = ''] = await board.idsIn('Meeting');
 
     await board.drag(bottom, { before: top });
 
@@ -110,7 +110,7 @@ test.describe('the opportunities board', () => {
       })
       .toBe(true);
     await board.open(viewId, tag);
-    expect(await board.idsIn('Meeting')).toEqual([bottom, top]);
+    await expect.poll(() => board.idsIn('Meeting')).toEqual([bottom, top]);
   });
 
   test('a deal added in a column gets the stage of that column', async ({ page, api, views }) => {
@@ -150,7 +150,9 @@ test.describe('the opportunities board', () => {
       tag,
     );
 
-    expect([await board.total('New'), await board.total('Proposal')]).toEqual(['1k', '12.5k']);
+    await expect
+      .poll(async () => [await board.total('New'), await board.total('Proposal')])
+      .toEqual(['1k', '12.5k']);
 
     await board.drag(moving.id, { column: 'Proposal' });
 
