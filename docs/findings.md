@@ -15,7 +15,7 @@ Defects and risks found while testing Twenty and its environment. Each finding i
 | [#57](https://github.com/Nikolay-Chillev/twenty-qa/issues/57) | The sign-in page sometimes stays on its loader for good | Major | Product | Open, reported upstream as [twentyhq/twenty#29254](https://github.com/twentyhq/twenty/issues/29254); the suite reloads once and annotates the test |
 | [#65](https://github.com/Nikolay-Chillev/twenty-qa/issues/65) | A refusal for lack of permission is 400 over REST, not 403 | Minor | Product | Open, reported upstream as [twentyhq/twenty#29396](https://github.com/twentyhq/twenty/issues/29396); covered by an expected failure |
 | [#68](https://github.com/Nikolay-Chillev/twenty-qa/issues/68) | A field a role may not see is listed on the record page as an empty field | Minor | Product | Open, reported upstream as [twentyhq/twenty#29397](https://github.com/twentyhq/twenty/issues/29397); covered by an expected failure |
-| [#74](https://github.com/Nikolay-Chillev/twenty-qa/issues/74) | A two-factor code can be used to sign in more than once | Minor | Product | Open, reported upstream as [twentyhq/twenty#29400](https://github.com/twentyhq/twenty/issues/29400); covered by an expected failure |
+| [#74](https://github.com/Nikolay-Chillev/twenty-qa/issues/74) | A two-factor code can be used to sign in more than once | Minor | Product | Open, reported upstream as [twentyhq/twenty#29400](https://github.com/twentyhq/twenty/issues/29400) and fixed there by [twentyhq/twenty#29404](https://github.com/twentyhq/twenty/pull/29404), after 2.54.0; covered by an expected failure |
 
 ## Details
 
