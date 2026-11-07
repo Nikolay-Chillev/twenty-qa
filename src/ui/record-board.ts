@@ -50,6 +50,21 @@ export class RecordBoard {
     return this.page.locator(`[data-selectable-id="${id}"]`);
   }
 
+  /**
+   * Whether a card can be picked up for a drag. The board gives a card its drag handle a
+   * moment after drawing it, so this waits a while for the handle before saying no.
+   */
+  async isDraggable(id: string): Promise<boolean> {
+    await expect(this.card(id)).toBeVisible();
+    return this.handle(id)
+      .first()
+      .waitFor({ timeout: 5_000 })
+      .then(
+        () => true,
+        () => false,
+      );
+  }
+
   /** What picks a card up for a drag; a card that cannot be moved has none. */
   handle(id: string): Locator {
     const card = `[data-selectable-id="${id}"]`;

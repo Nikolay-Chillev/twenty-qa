@@ -216,9 +216,8 @@ test.describe('the opportunities board', () => {
       async ({ api, views, roles, signInWithRole }) => {
         const { board, deal } = await readerBoard({ api, views, roles, signInWithRole });
 
-        await expect(board.card(deal.id)).toBeVisible();
         // As the table offers such a role no editing, and the board's columns no "+ New".
-        await expect(board.handle(deal.id)).toHaveCount(0);
+        expect(await board.isDraggable(deal.id)).toBe(false);
       },
     );
   });
