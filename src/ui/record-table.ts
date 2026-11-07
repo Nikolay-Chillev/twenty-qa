@@ -158,13 +158,24 @@ export class RecordIndexPage {
   /** Adds a record with the Create button and its name field; returns the new record's id. */
   async create(name: string): Promise<string> {
     await this.page.getByRole('button', { name: `Create ${this.object.label}` }).click();
-    await this.page.getByPlaceholder('Name').fill(name);
-    await this.page.keyboard.press('Enter');
-    // The new record opens in a side panel whose address carries its id.
-    await expect(this.page).toHaveURL(/panel=/);
-    const panel = new URL(this.page.url()).searchParams.get('panel') ?? '';
-    const id = /\/object\/\w+\/([0-9a-f-]{36})/.exec(panel)?.[1];
-    if (!id) throw new Error(`No record id in the side panel address: ${panel}`);
-    return id;
+    return createFromPanel(this.page, name);
   }
+}
+
+/**
+ * Fills in the name on the "Create <object>" form that a Create or "+ New" button opens in
+ * the side panel, and creates the record. The record exists only once the form's Create
+ * button is pressed; then the panel shows it, with its id in the address. Returns the id.
+ */
+export async function createFromPanel(page: Page, name: string): Promise<string> {
+  const panel = page.getByRole('complementary');
+  await expect(panel.getByRole('heading', { name: /^Create / })).toBeVisible();
+  // The name starts with the text of the name filter in use, if any.
+  await panel.getByRole('textbox', { name: 'Name', exact: true }).fill(name);
+  await panel.getByRole('button', { name: 'Create', exact: true }).click();
+  await expect(page).toHaveURL(/panel=/);
+  const address = new URL(page.url()).searchParams.get('panel') ?? '';
+  const id = /\/object\/\w+\/([0-9a-f-]{36})/.exec(address)?.[1];
+  if (!id) throw new Error(`No record id in the side panel address: ${address}`);
+  return id;
 }
