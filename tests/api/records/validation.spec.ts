@@ -56,23 +56,19 @@ test.describe('records refuse invalid input', () => {
   });
 
   for (const [number, title] of [
-    ['088-ABC', 'a phone number with letters after the digits, cut off without a word'],
+    ['088-ABC', 'a phone number with letters after the digits'],
     ['12', 'a phone number too short for any Bulgarian number'],
     ['08812345678901234', 'a phone number longer than the 15 digits E.164 allows'],
   ] as const) {
-    test.fail(
-      title,
-      { annotation: { type: 'issue', description: `${ISSUES}/32` } },
-      async ({ api }) => {
-        const response = await api.rest.send('POST', '/rest/people', {
-          data: personInput({
-            phones: { primaryPhoneNumber: number, primaryPhoneCallingCode: '+359' },
-          }),
-        });
+    test(title, { annotation: { type: 'issue', description: `${ISSUES}/32` } }, async ({ api }) => {
+      const response = await api.rest.send('POST', '/rest/people', {
+        data: personInput({
+          phones: { primaryPhoneNumber: number, primaryPhoneCallingCode: '+359' },
+        }),
+      });
 
-        await expectRefusal(response);
-      },
-    );
+      expect(await expectRefusal(response)).toContain('phone number is invalid');
+    });
   }
 
   test('a stage that does not exist, listing the valid ones', async ({ api }) => {
@@ -116,15 +112,19 @@ test.describe('records refuse invalid input', () => {
     ).rejects.toThrow(/emails\.primaryEmail/);
   });
 
-  test.fail(
-    'a currency code that does not exist',
+  test(
+    'a currency code that does not exist, over GraphQL too',
     { annotation: { type: 'issue', description: `${ISSUES}/30` } },
-    async ({ api }) => {
+    async ({ api, gql }) => {
+      const amount = { amountMicros: 12_500_000_000, currencyCode: 'XYZ' };
       const response = await api.rest.send('POST', '/rest/opportunities', {
-        data: opportunityInput({ amount: { amountMicros: 12_500_000_000, currencyCode: 'XYZ' } }),
+        data: opportunityInput({ amount }),
       });
 
-      expect(response.status()).toBe(400);
+      expect(await expectRefusal(response)).toContain('Invalid currency code "XYZ"');
+      await expect(gql.opportunities.create(opportunityInput({ amount }))).rejects.toThrow(
+        /Invalid currency code "XYZ"/,
+      );
     },
   );
 });

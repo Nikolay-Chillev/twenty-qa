@@ -11,6 +11,8 @@ import { memberIdOf } from '../../../src/auth/workspace';
 import { companyInput } from '../../../src/data/factories';
 import { apiFor, expect, graphqlFor, test } from '../../../src/fixtures';
 
+const ISSUES = 'https://github.com/Nikolay-Chillev/twenty-qa/issues';
+
 const FAR_FUTURE = '2099-12-31T00:00:00.000Z';
 
 test.describe('the Member role', () => {
@@ -102,6 +104,19 @@ test.describe('the Member role', () => {
     );
     expect(webhooks.map((webhook) => webhook.targetUrl)).not.toContain(targetUrl);
   });
+
+  // Records are refused with 403 since 2.56.0; settings over REST are not yet.
+  test.fail(
+    'a member adding a webhook is refused with 403 Forbidden, as for records',
+    { annotation: { type: 'issue', description: `${ISSUES}/65` } },
+    async ({ request, memberToken }) => {
+      const response = await apiFor(request, memberToken).rest.send('POST', '/rest/webhooks', {
+        data: { targetUrl: `https://example.com/qa-${randomUUID()}`, operations: ['*.*'] },
+      });
+
+      expect(response.status()).toBe(403);
+    },
+  );
 });
 
 test.describe('the Views permission', () => {
