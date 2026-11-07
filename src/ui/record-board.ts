@@ -50,6 +50,21 @@ export class RecordBoard {
     return this.page.locator(`[data-selectable-id="${id}"]`);
   }
 
+  /**
+   * Whether a card can be picked up for a drag. The board gives a card its drag handle a
+   * moment after drawing it, so this waits a while for the handle before saying no.
+   */
+  async isDraggable(id: string): Promise<boolean> {
+    await expect(this.card(id)).toBeVisible();
+    return this.handle(id)
+      .first()
+      .waitFor({ timeout: 5_000 })
+      .then(
+        () => true,
+        () => false,
+      );
+  }
+
   /** What picks a card up for a drag; a card that cannot be moved has none. */
   handle(id: string): Locator {
     const card = `[data-selectable-id="${id}"]`;
@@ -93,22 +108,52 @@ export class RecordBoard {
   async drag(id: string, to: { column: string } | { before: string }): Promise<void> {
     const from = centre(await boxOf(this.card(id)));
     let target: { x: number; y: number };
+    let landing: (line: Box) => boolean;
     if ('column' in to) {
       const header = await boxOf(this.header(to.column));
       target = { x: centre(header).x, y: header.y + header.height + 40 };
+      landing = (line) => header.x <= centre(line).x && centre(line).x < header.x + header.width;
     } else {
       const card = await boxOf(this.card(to.before));
       target = { x: centre(card).x, y: card.y + card.height / 4 };
+      landing = (line) =>
+        card.x <= centre(line).x &&
+        centre(line).x < card.x + card.width &&
+        Math.abs(centre(line).y - card.y) <= 16;
     }
     await this.page.mouse.move(from.x, from.y);
     await this.page.mouse.down();
     // The board starts a drag only after the pointer has moved a little.
     await this.page.mouse.move(from.x + 10, from.y + 10, { steps: 5 });
     await this.page.mouse.move(target.x, target.y, { steps: 20 });
-    // The board picks the drop target on a pointer move; in WebKit the last move of a
-    // fast drag can still be measured against the column it left, so move once more.
-    await this.page.mouse.move(target.x + 2, target.y + 2, { steps: 3 });
+    // The board draws a line where the card will land. In WebKit the line can lag behind
+    // the pointer, or wait for the pointer to move again, and a card let go before it
+    // moves lands where the line was. So the pointer moves a pixel or two at a time, as a
+    // hand holding a card does, and lets go once the line is in place.
+    let nudge = 1;
+    await expect
+      .poll(
+        async () => {
+          nudge = -nudge;
+          await this.page.mouse.move(target.x + nudge, target.y + nudge);
+          return (await this.dropLines()).some(landing);
+        },
+        {
+          message: `the board shows the card landing ${'column' in to ? `in ${to.column}` : 'before the other card'}`,
+        },
+      )
+      .toBe(true);
     await this.page.mouse.up();
+  }
+
+  /** Where the board shows a dragged card would land: its drop lines, while dragging. */
+  private async dropLines(): Promise<Box[]> {
+    const boxes: Box[] = [];
+    for (const line of await this.page.locator('[data-drag-over="true"]').all()) {
+      const box = await line.boundingBox();
+      if (box) boxes.push(box);
+    }
+    return boxes;
   }
 
   /**
