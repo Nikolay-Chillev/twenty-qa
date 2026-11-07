@@ -5,9 +5,9 @@ import { GraphQLError } from './graphql';
 import { RestErrorBody } from './rest';
 
 // How Twenty refuses a call for lack of permission. Over GraphQL the error's code is
-// FORBIDDEN. Over REST the body's code is PERMISSION_DENIED, with status 400 rather than
-// 403 (finding #65); only the test of that status checks it, so the other tests keep
-// working once it is fixed.
+// FORBIDDEN. Over REST the body's code is PERMISSION_DENIED. Since 2.56.0 the status is
+// 403 for records, but still 400 for settings such as webhooks and API keys (finding #65);
+// only the tests of that status check it, so the other tests keep working once it is fixed.
 
 const PermissionDenied = RestErrorBody.extend({ code: z.literal('PERMISSION_DENIED') });
 

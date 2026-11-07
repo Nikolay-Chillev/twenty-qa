@@ -71,7 +71,7 @@ test.describe('two-factor sign-in', () => {
     expect(response.status()).toBe(200);
   });
 
-  test.fail(
+  test(
     'a code that was used once is refused the second time',
     { annotation: { type: 'issue', description: `${ISSUES}/74` } },
     async ({ request, newMember, password }) => {

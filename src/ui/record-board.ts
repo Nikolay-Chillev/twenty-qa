@@ -1,6 +1,6 @@
 import { expect, type Locator, type Page } from '@playwright/test';
 
-import { PAGE_LOAD } from './record-table';
+import { createFromPanel, PAGE_LOAD } from './record-table';
 import { ViewBar } from './view-bar';
 
 /**
@@ -157,8 +157,8 @@ export class RecordBoard {
   }
 
   /**
-   * Adds a record with the "+ New" at the bottom of a column; the record opens in the
-   * side panel, where its name is typed. Returns the new record's id.
+   * Adds a record with the "+ New" at the bottom of a column, through the form it opens
+   * in the side panel. Returns the new record's id.
    */
   async add(column: string, name: string): Promise<string> {
     const header = await boxOf(this.header(column));
@@ -175,15 +175,7 @@ export class RecordBoard {
       }
     }
     if (!added) throw new Error(`No "New" button under column ${column}`);
-    // The name starts with the text of the name filter in use, if any.
-    const nameField = this.page.getByRole('textbox', { name: 'Name' });
-    await nameField.fill(name);
-    await this.page.keyboard.press('Enter');
-    await expect(this.page).toHaveURL(/panel=/);
-    const panel = new URL(this.page.url()).searchParams.get('panel') ?? '';
-    const id = /\/object\/\w+\/([0-9a-f-]{36})/.exec(panel)?.[1];
-    if (!id) throw new Error(`No record id in the side panel address: ${panel}`);
-    return id;
+    return createFromPanel(this.page, name);
   }
 }
 

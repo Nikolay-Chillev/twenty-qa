@@ -57,7 +57,7 @@ test.describe('a role that may only read companies', () => {
     expect(await api.companies.get(company.id)).toEqual(company);
   });
 
-  test.fail(
+  test(
     'is refused with 403 Forbidden over REST, as over GraphQL',
     { annotation: { type: 'issue', description: `${ISSUES}/65` } },
     async ({ request, api, roles }) => {
@@ -123,11 +123,14 @@ test.describe('a role without access to companies', () => {
     expect(response.status()).toBe(200);
     expect(await response.text()).not.toContain(company.name);
 
-    await expectDenied(
-      await apiFor(request, key).rest.send('GET', '/rest/people', {
-        params: { filter: `company.name[eq]:"${company.name}"` },
-      }),
-    );
+    // A filter on the company finds nobody, even with its right name: for this role the
+    // person has no company. The admin finds them with the same filter.
+    const byCompanyName = { params: { filter: `company.name[eq]:"${company.name}"` } };
+    const filtered = await apiFor(request, key).rest.send('GET', '/rest/people', byCompanyName);
+    expect(filtered.status()).toBe(200);
+    expect(await filtered.text()).not.toContain(person.id);
+    const asAdmin = await api.rest.send('GET', '/rest/people', byCompanyName);
+    expect(await asAdmin.text()).toContain(person.id);
     await expectForbidden(
       graphql(request, '/graphql', {
         query: 'query($id: UUID!) { person(filter: { id: { eq: $id } }) { id company { name } } }',
