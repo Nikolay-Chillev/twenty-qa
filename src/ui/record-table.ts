@@ -59,8 +59,16 @@ export class RecordTable {
    * as covered.
    */
   async openRecord(name: string): Promise<void> {
-    await this.link(name).first().hover();
-    await expect(this.page.getByRole('group', { name: 'Cell controls' })).toBeVisible();
+    // The cell shows its controls while the pointer is over it. Right after the table is
+    // drawn a hover can go unnoticed (seen in Firefox), so the pointer moves off and back
+    // until they show, as a user's would.
+    await expect(async () => {
+      await this.page.mouse.move(0, 0);
+      await this.link(name).first().hover();
+      await expect(this.page.getByRole('group', { name: 'Cell controls' })).toBeVisible({
+        timeout: 2_000,
+      });
+    }).toPass({ timeout: 15_000 });
     // The copy comes after the cell's own link.
     await this.link(name).last().click();
   }
