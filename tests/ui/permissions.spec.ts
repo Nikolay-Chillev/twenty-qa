@@ -57,7 +57,7 @@ test.describe('the settings', () => {
       const settings = new SettingsPage(page);
 
       for (const path of ['members', 'members/roles', 'developers', 'developers/apis/new']) {
-        await settings.open(path);
+        await settings.tryToOpen(path);
         await expect(page, `/settings/${path}`).toHaveURL(/\/settings\/profile$/, {
           timeout: PAGE_LOAD,
         });
@@ -150,7 +150,7 @@ test.describe('a field hidden from a role', () => {
     await expect(page.getByText(company.domainName.primaryLinkUrl)).toHaveCount(0);
   });
 
-  test.fail(
+  test(
     'is not listed on the record page either',
     { annotation: { type: 'issue', description: `${ISSUES}/68` } },
     async ({ api, roles, signInWithRole }) => {
@@ -164,7 +164,7 @@ test.describe('a field hidden from a role', () => {
       await expect(
         page.getByText(company.address.addressCity, { exact: false }).first(),
       ).toBeVisible();
-      // Twenty lists it as an empty field, which reads as "no domain".
+      // Before 2.57.0 Twenty listed it as an empty field, which read as "no domain".
       await expect(page.getByText('Domain Name', { exact: true })).toHaveCount(0);
     },
   );
