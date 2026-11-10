@@ -20,6 +20,16 @@ export class SettingsPage {
   }
 
   /**
+   * Opens a section by its address when the app may send the user elsewhere at once, e.g.
+   * a section their role may not see. Since 2.57 the app can do so before the page has
+   * loaded, which Playwright takes for an interrupted navigation, so this waits only for
+   * the address to be taken.
+   */
+  async tryToOpen(path: string): Promise<void> {
+    await this.page.goto(`/settings/${path}`, { waitUntil: 'commit' });
+  }
+
+  /**
    * On the profile, the menus of the devices with a session on the account, except this
    * one, which has none.
    */

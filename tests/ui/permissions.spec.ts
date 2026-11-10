@@ -57,7 +57,7 @@ test.describe('the settings', () => {
       const settings = new SettingsPage(page);
 
       for (const path of ['members', 'members/roles', 'developers', 'developers/apis/new']) {
-        await settings.open(path);
+        await settings.tryToOpen(path);
         await expect(page, `/settings/${path}`).toHaveURL(/\/settings\/profile$/, {
           timeout: PAGE_LOAD,
         });
