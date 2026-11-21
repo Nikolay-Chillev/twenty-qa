@@ -6,7 +6,7 @@ import type { ViewsApi } from '../../src/api/views';
 import { companyInput } from '../../src/data/factories';
 import { type Api, expect, test } from '../../src/fixtures';
 import type { Company } from '../../src/schemas/records';
-import { COMPANIES, RecordIndexPage } from '../../src/ui/record-table';
+import { COMPANIES, PAGE_LOAD, RecordIndexPage } from '../../src/ui/record-table';
 
 /** A prefix in Cyrillic that keeps a test's records and views apart from everyone else's. */
 const newTag = (): string => `И${randomUUID().slice(0, 6)}`;
@@ -104,9 +104,10 @@ test.describe('saved views', () => {
     });
     const descending = idsOf(records);
 
+    // A reload loads the whole app again: a page load, not an assertion.
     await page.reload();
-    await expect(companies.views.picker).toContainText(`Изглед ${tag}`);
-    await expect.poll(() => companies.table.ids()).toEqual(descending);
+    await expect(companies.views.picker).toContainText(`Изглед ${tag}`, { timeout: PAGE_LOAD });
+    await expect.poll(() => companies.table.ids(), { timeout: PAGE_LOAD }).toEqual(descending);
 
     // The member finds the view in their own list of views.
     const theirs = await openCompanies(memberPage, views);
@@ -132,7 +133,7 @@ test.describe('saved views', () => {
       .poll(async () => (await views.get(view.id))?.viewFilters)
       .toEqual([expect.objectContaining({ operand: 'CONTAINS', value: `${tag} Гама` })]);
     await page.reload();
-    await expect.poll(() => companies.table.ids()).toEqual([gama.id]);
+    await expect.poll(() => companies.table.ids(), { timeout: PAGE_LOAD }).toEqual([gama.id]);
   });
 
   test('a renamed view keeps its new name', async ({ page, views }) => {
