@@ -55,13 +55,16 @@ test.describe('the settings', () => {
     }) => {
       // Each address is a fresh page load of the whole app.
       test.slow();
-      const settings = new SettingsPage(page);
 
       for (const path of ['members', 'members/roles', 'developers', 'developers/apis/new']) {
-        await settings.tryToOpen(path);
-        await expect(page, `/settings/${path}`).toHaveURL(/\/settings\/profile$/, {
+        // A tab of its own for each address: the page before cannot cut the navigation
+        // short, and a navigation that never happens leaves a blank tab, not the profile.
+        const tab = await page.context().newPage();
+        await new SettingsPage(tab).tryToOpen(path);
+        await expect(tab, `/settings/${path}`).toHaveURL(/\/settings\/profile$/, {
           timeout: PAGE_LOAD,
         });
+        await tab.close();
       }
     });
   });
