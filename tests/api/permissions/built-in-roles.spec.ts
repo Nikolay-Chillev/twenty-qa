@@ -105,8 +105,8 @@ test.describe('the Member role', () => {
     expect(webhooks.map((webhook) => webhook.targetUrl)).not.toContain(targetUrl);
   });
 
-  // Records are refused with 403 since 2.56.0; settings over REST are not yet.
-  test.fail(
+  // Records are refused with 403 since 2.56.0, settings such as webhooks since 2.59.0.
+  test(
     'a member adding a webhook is refused with 403 Forbidden, as for records',
     { annotation: { type: 'issue', description: `${ISSUES}/65` } },
     async ({ request, memberToken }) => {

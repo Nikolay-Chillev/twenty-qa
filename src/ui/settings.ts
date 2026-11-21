@@ -4,7 +4,7 @@ import { PAGE_LOAD } from './record-table';
 
 /**
  * Settings, at /settings/<section>. Its sidebar lists the sections the user's role may
- * open: everyone has their own (Profile, Accounts, …), admins also the workspace's.
+ * open: everyone has their own (Profile, Apps preferences, …), admins also the workspace's.
  */
 export class SettingsPage {
   constructor(readonly page: Page) {}

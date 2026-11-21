@@ -36,6 +36,7 @@ export class TwoFactorSetupPage {
     await this.page.getByRole('textbox').first().click();
     await this.page.keyboard.type(code);
     await this.page.getByRole('button', { name: 'Save' }).click();
-    await expect(this.page).toHaveURL(/\/settings\/profile$/);
+    // Since 2.58 the page then stays and shows the account's backup codes.
+    await expect(this.page.getByRole('heading', { name: 'Backup codes' })).toBeVisible();
   }
 }

@@ -4,6 +4,7 @@ import { WORKSPACE_URL } from '../../src/auth/users';
 import { expect, test } from '../../src/fixtures';
 import { Navigation } from '../../src/ui/navigation';
 import { PAGE_LOAD } from '../../src/ui/record-table';
+import { SettingsPage } from '../../src/ui/settings';
 import { SignInPage } from '../../src/ui/sign-in';
 import { TwoFactorSetupPage } from '../../src/ui/two-factor';
 
@@ -23,7 +24,10 @@ test.describe('two-factor sign-in', () => {
     // The previous step's code, so the current one is new when the member signs in with
     // it; with 15 seconds left in the step for typing and saving it.
     await setup.confirm(await previousStepCode(key, 15));
-    await expect(page.getByRole('link', { name: 'Authenticator App Active' })).toBeVisible();
+    await new SettingsPage(page).open('profile');
+    await expect(page.getByRole('link', { name: 'Authenticator App Active' })).toBeVisible({
+      timeout: PAGE_LOAD,
+    });
 
     const signIn = new SignInPage(guestPage, WORKSPACE_URL);
     await signIn.signIn(newMember.email, password);

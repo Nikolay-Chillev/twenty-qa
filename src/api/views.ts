@@ -85,13 +85,19 @@ export class ViewsApi {
     return indexViewOf(object, await this.list(object));
   }
 
+  /** A view by its id, or null if there is none; since 2.60 Twenty answers NOT_FOUND. */
   async get(id: string): Promise<View | null> {
-    const data = await this.call(
-      `query($id: String!) { getView(id: $id) { ${VIEW} } }`,
-      { id },
-      z.object({ getView: View.nullable() }),
-    );
-    return data.getView;
+    try {
+      const data = await this.call(
+        `query($id: String!) { getView(id: $id) { ${VIEW} } }`,
+        { id },
+        z.object({ getView: View.nullable() }),
+      );
+      return data.getView;
+    } catch (error) {
+      if (error instanceof GraphQLError && error.codes.includes('NOT_FOUND')) return null;
+      throw error;
+    }
   }
 
   /**
