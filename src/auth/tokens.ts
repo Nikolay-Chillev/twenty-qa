@@ -80,6 +80,37 @@ export async function tokensFromCode(
   return pairOf(getAuthTokensFromOTP.tokens);
 }
 
+/**
+ * Signs in with a backup code instead of a code from the app, as "Lost your authenticator?
+ * Use a backup or recovery code" does.
+ */
+export async function tokensFromBackupCode(
+  request: APIRequestContext,
+  loginToken: string,
+  code: string,
+): Promise<TokenPair> {
+  const { getAuthTokensFromTwoFactorAuthenticationRecoveryCode: signedIn } = await graphql(
+    request,
+    '/metadata',
+    {
+      query: `mutation($loginToken: String!, $code: String!, $origin: String!) {
+        getAuthTokensFromTwoFactorAuthenticationRecoveryCode(
+          loginToken: $loginToken
+          recoveryCode: $code
+          origin: $origin
+        ) {
+          tokens { accessOrWorkspaceAgnosticToken { token } refreshToken { token } }
+        }
+      }`,
+      variables: { loginToken, code, origin: WORKSPACE_URL },
+      data: z.object({
+        getAuthTokensFromTwoFactorAuthenticationRecoveryCode: z.object({ tokens: Tokens }),
+      }),
+    },
+  );
+  return pairOf(signedIn.tokens);
+}
+
 /** Signs a user in to the suite's workspace with a password and returns their tokens. */
 export async function signInForTokens(
   request: APIRequestContext,
