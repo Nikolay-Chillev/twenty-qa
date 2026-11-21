@@ -69,6 +69,16 @@ export class SignInPage {
     await this.page.getByRole('button', { name: 'Submit' }).click();
   }
 
+  /** Signs in with a backup code instead, as someone who has lost their authenticator app. */
+  async enterBackupCode(code: string): Promise<void> {
+    await expect(this.codeStep).toBeVisible();
+    await this.page
+      .getByText('Lost your authenticator? Use a backup or recovery code', { exact: true })
+      .click();
+    await this.page.getByPlaceholder('XXXXX-XXXXX-XXXXX-XXXXX').fill(code);
+    await this.page.getByRole('button', { name: 'Continue', exact: true }).click();
+  }
+
   /** Asks for the reset email from the password step, as a user who forgot it does. */
   async forgotPassword(email: string): Promise<void> {
     await this.open();

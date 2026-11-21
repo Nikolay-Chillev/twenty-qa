@@ -49,4 +49,21 @@ test.describe('two-factor sign-in', () => {
     await expect(signIn.codeStep).toBeVisible();
     await expect(guestPage).toHaveURL(`${WORKSPACE_URL}/welcome`);
   });
+
+  test('a member who has lost their app signs in with a backup code', async ({
+    request,
+    guestPage,
+    newMember,
+    password,
+  }) => {
+    const {
+      backupCodes: [code = ''],
+    } = await turnOnTwoFactor(request, newMember, password);
+    const signIn = new SignInPage(guestPage, WORKSPACE_URL);
+    await signIn.signIn(newMember.email, password);
+
+    await signIn.enterBackupCode(code);
+
+    await expect(new Navigation(guestPage).workspaceMenu).toBeVisible({ timeout: PAGE_LOAD });
+  });
 });
