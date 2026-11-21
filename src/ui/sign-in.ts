@@ -1,30 +1,13 @@
-import { expect, type Locator, type Page, test } from '@playwright/test';
+import { expect, type Locator, type Page } from '@playwright/test';
 
 import { PAGE_LOAD } from './record-table';
 
-const STUCK_ON_LOADER = 'https://github.com/Nikolay-Chillev/twenty-qa/issues/57';
-
-/** Longer than the form took to show in any load that worked, with a margin for CI. */
-const FORM_SHOWN_WITHIN = 20_000;
-
 /**
- * Waits for the sign-in form. Now and then Twenty leaves the page on its loader for
- * good (finding #57); a reload shows the form. So the page is reloaded once, and the
- * test is annotated with the finding, which keeps count of how often it happens.
+ * Waits for the sign-in form, which shows once the page has loaded the whole app. Before
+ * 2.57.0 the page now and then stayed on its loader for good (finding #57), and the suite
+ * reloaded it; a hang now fails the test.
  */
-async function waitForForm(page: Page, field: Locator): Promise<void> {
-  const shown = await field.waitFor({ timeout: FORM_SHOWN_WITHIN }).then(
-    () => true,
-    () => false,
-  );
-  if (shown) return;
-  test.info().annotations.push({
-    type: 'issue',
-    description: `${STUCK_ON_LOADER} (the page stayed on its loader and was reloaded)`,
-  });
-  // A slow page may move on by itself meanwhile, and Firefox then aborts the reload
-  // (NS_BINDING_ABORTED); what counts is that the form shows.
-  await page.reload().catch(() => undefined);
+async function waitForForm(field: Locator): Promise<void> {
   await expect(field).toBeVisible({ timeout: PAGE_LOAD });
 }
 
@@ -56,7 +39,7 @@ export class SignInPage {
 
   async open(): Promise<this> {
     await this.page.goto(this.home);
-    await waitForForm(this.page, this.email);
+    await waitForForm(this.email);
     return this;
   }
 
@@ -117,7 +100,7 @@ export class InvitationPage {
 
   async open(link: string): Promise<this> {
     await this.page.goto(link);
-    await waitForForm(this.page, this.form.email);
+    await waitForForm(this.form.email);
     await expect(this.form.email).toHaveValue(/@/);
     return this;
   }
