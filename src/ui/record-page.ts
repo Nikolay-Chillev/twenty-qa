@@ -25,4 +25,33 @@ export class RecordPage {
   relation(name: string): Locator {
     return this.page.getByRole('link', { name, exact: true }).last();
   }
+
+  /**
+   * A tab above the timeline, e.g. "Notes". Its address is the record's with a hash; the
+   * sidebar has links of the same names to the objects' own lists.
+   */
+  tab(name: string): Locator {
+    return this.page.getByRole('link', { name, exact: true }).and(this.page.locator('[href*="#"]'));
+  }
+
+  /** Starts a note from the Notes tab. The note opens in the side panel; returns its id. */
+  async newNote(): Promise<string> {
+    await this.tab('Notes').click();
+    await this.page.getByRole('button', { name: 'New note' }).click();
+    await expect(this.page).toHaveURL(/panel=/);
+    const panel = new URL(this.page.url()).searchParams.get('panel') ?? '';
+    const id = /\/object\/note\/([0-9a-f-]{36})/.exec(panel)?.[1];
+    if (!id) throw new Error(`No note id in the side panel address: ${panel}`);
+    return id;
+  }
+
+  /** A task on the Tasks tab: its title, with the checkbox that marks it done. */
+  task(title: string): Locator {
+    const name = this.page.getByRole('button', { name: title, exact: true });
+    return this.page
+      .locator('div')
+      .filter({ has: name })
+      .filter({ has: this.page.getByRole('checkbox') })
+      .last();
+  }
 }
