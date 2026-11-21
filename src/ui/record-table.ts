@@ -42,9 +42,12 @@ export class RecordTable {
           top: row.getBoundingClientRect().top,
         })),
     );
+    // While its records load, the table draws placeholder rows numbered from 0.
     return rows
+      .map((row) => ({ id: row.testId.replace('row-id-', ''), top: row.top }))
+      .filter((row) => !/^\d+$/.test(row.id))
       .sort((first, second) => first.top - second.top)
-      .map((row) => row.testId.replace('row-id-', ''));
+      .map((row) => row.id);
   }
 
   /** The link on a record's name, which opens its page. */
