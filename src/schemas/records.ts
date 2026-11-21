@@ -28,7 +28,7 @@ const Actor = z.object({
   name: z.string(),
 });
 
-const RecordBase = z.object({
+export const RecordBase = z.object({
   id: z.uuid(),
   createdAt: z.iso.datetime(),
   updatedAt: z.iso.datetime(),
