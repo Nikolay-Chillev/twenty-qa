@@ -33,6 +33,18 @@ import {
   Person,
   type PersonInput,
 } from '../schemas/records';
+import {
+  Attachment,
+  type AttachmentInput,
+  Note,
+  type NoteInput,
+  NoteTarget,
+  type NoteTargetInput,
+  Task,
+  type TaskInput,
+  TaskTarget,
+  type TaskTargetInput,
+} from '../schemas/activities';
 import { Navigation } from '../ui/navigation';
 import { PAGE_LOAD } from '../ui/record-table';
 import { SignInPage } from '../ui/sign-in';
@@ -42,6 +54,11 @@ export interface Api {
   companies: RecordsApi<Company, CompanyInput>;
   people: RecordsApi<Person, PersonInput>;
   opportunities: RecordsApi<Opportunity, OpportunityInput>;
+  notes: RecordsApi<Note, NoteInput>;
+  tasks: RecordsApi<Task, TaskInput>;
+  noteTargets: RecordsApi<NoteTarget, NoteTargetInput>;
+  taskTargets: RecordsApi<TaskTarget, TaskTargetInput>;
+  attachments: RecordsApi<Attachment, AttachmentInput>;
 }
 
 export interface GraphQLApi {
@@ -58,6 +75,11 @@ export function apiFor(request: APIRequestContext, token: string): Api {
     companies: recordsApi(rest, 'companies', Company),
     people: recordsApi(rest, 'people', Person),
     opportunities: recordsApi(rest, 'opportunities', Opportunity),
+    notes: recordsApi(rest, 'notes', Note),
+    tasks: recordsApi(rest, 'tasks', Task),
+    noteTargets: recordsApi(rest, 'noteTargets', NoteTarget),
+    taskTargets: recordsApi(rest, 'taskTargets', TaskTarget),
+    attachments: recordsApi(rest, 'attachments', Attachment),
   };
 }
 
