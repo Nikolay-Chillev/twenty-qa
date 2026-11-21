@@ -95,6 +95,8 @@ interface TestFixtures {
    * so the test may sign it out or change its password; taken out of the workspace after.
    */
   newMember: TestUser;
+  /** Another member made for this test, with a mailbox of their own, for tests of two. */
+  secondMember: TestUser;
   /** A second browser with no session, for someone who has no account yet. */
   guestPage: Page;
   /**
@@ -120,6 +122,24 @@ interface WorkerFixtures {
   memberToken: string;
   /** Password of the suite's users. */
   password: string;
+}
+
+/**
+ * Makes a member with this address and the suite's password for one test, and takes them
+ * out of the workspace after it, unless the test did.
+ */
+async function useNewMember(
+  request: APIRequestContext,
+  adminToken: string,
+  password: string,
+  address: string,
+  use: (user: TestUser) => Promise<void>,
+): Promise<void> {
+  const user: TestUser = { role: 'member', email: address, ...personName() };
+  await signInMember(request, password, adminToken, user);
+  await use(user);
+  const membership = await membershipOf(request, adminToken, user.email);
+  if (membership) await removeFromWorkspace(request, adminToken, membership.memberId);
 }
 
 export const test = base.extend<TestFixtures, WorkerFixtures>({
@@ -199,12 +219,11 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
     await context.close();
   },
   newMember: async ({ request, mailbox, adminToken, password }, use) => {
-    const user: TestUser = { role: 'member', email: mailbox.address, ...personName() };
-    await signInMember(request, password, adminToken, user);
-    await use(user);
-    // The test may have taken the member out itself.
-    const membership = await membershipOf(request, adminToken, user.email);
-    if (membership) await removeFromWorkspace(request, adminToken, membership.memberId);
+    await useNewMember(request, adminToken, password, mailbox.address, use);
+  },
+  secondMember: async ({ request, adminToken, password }, use) => {
+    const mailbox = new Mailbox(new Mailpit(request, config.MAILPIT_URL));
+    await useNewMember(request, adminToken, password, mailbox.address, use);
   },
   guestPage: async ({ browser }, use) => {
     // An empty state of its own: a context made in a test otherwise takes the

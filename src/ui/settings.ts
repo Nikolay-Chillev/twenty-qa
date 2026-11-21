@@ -22,11 +22,14 @@ export class SettingsPage {
   /**
    * Opens a section by its address when the app may send the user elsewhere at once, e.g.
    * a section their role may not see. Since 2.57 the app can do so before the page has
-   * loaded, which Playwright takes for an interrupted navigation, so this waits only for
-   * the address to be taken.
+   * loaded, which Playwright takes for an interrupted navigation ("Frame load interrupted"
+   * in WebKit), so this waits only for the address to be taken, and leaves it to the test
+   * to check where the user landed.
    */
   async tryToOpen(path: string): Promise<void> {
-    await this.page.goto(`/settings/${path}`, { waitUntil: 'commit' });
+    await this.page.goto(`/settings/${path}`, { waitUntil: 'commit' }).catch((error: unknown) => {
+      if (!/interrupted|NS_BINDING_ABORTED/.test(String(error))) throw error;
+    });
   }
 
   /**
