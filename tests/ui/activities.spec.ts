@@ -69,6 +69,7 @@ test.describe('notes, tasks and files on a record', () => {
     await expect(record.task('Обади се за договора')).toContainText('Dec 15, 2026');
     // The admin, who is the assignee, finds it in their own view of the tasks.
     const mine = (await views.list('task')).find((view) => view.name === 'Assigned to Me');
+    expect(mine, 'the "Assigned to Me" view of the tasks').toBeDefined();
     const tasks = await new RecordIndexPage(page, TASKS).openView(mine?.id ?? '');
     await expect(tasks.table.row(task.id)).toBeVisible();
   });
