@@ -15,7 +15,7 @@ import { SettingsPage } from '../../src/ui/settings';
 const ISSUES = 'https://github.com/Nikolay-Chillev/twenty-qa/issues';
 
 /** Sections of the settings for the workspace, which only admins have. */
-const WORKSPACE_SECTIONS = ['General', 'Data model', 'Members', 'Developers'];
+const WORKSPACE_SECTIONS = ['General', 'Data model', 'Members', 'Developers', 'Communication'];
 
 const READ_ONLY: ObjectRights = {
   canReadObjectRecords: true,
@@ -43,7 +43,8 @@ test.describe('the settings', () => {
       await settings.open('profile');
 
       await expect(settings.section('Profile')).toBeVisible({ timeout: PAGE_LOAD });
-      await expect(settings.section('Accounts')).toBeVisible();
+      // Since 2.60 a member's connected accounts are under Apps preferences.
+      await expect(settings.section('Apps preferences')).toBeVisible();
       for (const section of WORKSPACE_SECTIONS) {
         await expect(settings.section(section)).toHaveCount(0);
       }
