@@ -106,6 +106,12 @@ export class RecordBoard {
    * or onto the top half of another card, which puts it before that card.
    */
   async drag(id: string, to: { column: string } | { before: string }): Promise<void> {
+    // Now and then, in WebKit, the board never shows where the card would land. Such a
+    // drag is cancelled with Escape, which puts the card back, and made again.
+    await expect(() => this.dragOnce(id, to)).toPass({ timeout: 45_000 });
+  }
+
+  private async dragOnce(id: string, to: { column: string } | { before: string }): Promise<void> {
     const from = centre(await boxOf(this.card(id)));
     let target: { x: number; y: number };
     let landing: (line: Box) => boolean;
@@ -131,18 +137,24 @@ export class RecordBoard {
     // moves lands where the line was. So the pointer moves a pixel or two at a time, as a
     // hand holding a card does, and lets go once the line is in place.
     let nudge = 1;
-    await expect
-      .poll(
-        async () => {
-          nudge = -nudge;
-          await this.page.mouse.move(target.x + nudge, target.y + nudge);
-          return (await this.dropLines()).some(landing);
-        },
-        {
-          message: `the board shows the card landing ${'column' in to ? `in ${to.column}` : 'before the other card'}`,
-        },
-      )
-      .toBe(true);
+    try {
+      await expect
+        .poll(
+          async () => {
+            nudge = -nudge;
+            await this.page.mouse.move(target.x + nudge, target.y + nudge);
+            return (await this.dropLines()).some(landing);
+          },
+          {
+            message: `the board shows the card landing ${'column' in to ? `in ${to.column}` : 'before the other card'}`,
+          },
+        )
+        .toBe(true);
+    } catch (error) {
+      await this.page.keyboard.press('Escape');
+      await this.page.mouse.up();
+      throw error;
+    }
     await this.page.mouse.up();
   }
 
