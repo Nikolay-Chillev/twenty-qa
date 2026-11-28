@@ -158,6 +158,20 @@ export class RecordBoard {
     await this.page.mouse.up();
   }
 
+  /**
+   * Drags a card toward a column and lets go, as a user would, without waiting for the
+   * board to take it: for a card the board should not let go of its column.
+   */
+  async tryToDrag(id: string, column: string): Promise<void> {
+    const from = centre(await boxOf(this.card(id)));
+    const header = await boxOf(this.header(column));
+    await this.page.mouse.move(from.x, from.y);
+    await this.page.mouse.down();
+    await this.page.mouse.move(from.x + 10, from.y + 10, { steps: 5 });
+    await this.page.mouse.move(centre(header).x, header.y + header.height + 40, { steps: 20 });
+    await this.page.mouse.up();
+  }
+
   /** Where the board shows a dragged card would land: its drop lines, while dragging. */
   private async dropLines(): Promise<Box[]> {
     const boxes: Box[] = [];
