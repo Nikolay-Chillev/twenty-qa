@@ -13,7 +13,7 @@ Test automation for [Twenty](https://github.com/twentyhq/twenty), an open-source
 
 | Service | Image | URL |
 |---|---|---|
-| Twenty 2.60.1 (server and worker) | [twentycrm/twenty](https://hub.docker.com/r/twentycrm/twenty) | API: http://localhost:3000<br>Test workspace: http://qa.localhost:3000 |
+| Twenty 2.65.0 (server and worker) | [twentycrm/twenty](https://hub.docker.com/r/twentycrm/twenty) | API: http://localhost:3000<br>Test workspace: http://qa.localhost:3000 |
 | Postgres 16 and Redis 8 | official images | internal only |
 | Mailpit (catches all outgoing email) | [axllent/mailpit](https://github.com/axllent/mailpit) | http://localhost:8026 |
 
@@ -34,7 +34,7 @@ The environment differs from a default Twenty installation in a few places, all 
 | `IS_MULTIWORKSPACE_ENABLED` | one workspace on `localhost` | several, each on its own subdomain | As on Twenty's cloud; needed to test tenant isolation ([ADR 0001](docs/adr/0001-run-twenty-with-multiple-workspaces.md)) |
 | `IS_WORKSPACE_CREATION_LIMITED_TO_SERVER_ADMINS` | only server admins create workspaces | anyone may | Tests create a second workspace when they need one |
 
-Other limits (email send rate, webhook calls, workflow runs) keep their defaults.
+Other limits (email send rate, webhook calls, workflow runs) keep their defaults. One cannot be raised by a setting: a sender may invite 50 addresses of their own email domain and 20 others a day. The admin invites addresses at `example.com`, its own domain, and a run in CI sends about ten invitations per job; a local environment reused for many runs on one day can reach the 50, and invitations are then refused with "Too many workspace invitations sent" until the next day.
 
 **Readiness.** `/healthz` is a liveness check: it reports OK as soon as the server process is up, before the API can serve requests and with the database down ([by design](https://github.com/twentyhq/twenty/issues/28763)). So the server's health check asks the GraphQL API a question that needs the database. The worker sends emails and calls webhooks; it counts as ready once its email queue consumer is connected to Redis. `scripts/start.sh` returns only when both are healthy.
 
