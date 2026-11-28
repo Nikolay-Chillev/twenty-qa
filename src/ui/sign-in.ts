@@ -132,12 +132,17 @@ export class InvitationPage {
     await this.page.goto(link);
     const answer = this.page.getByRole('status').or(this.firstName).first();
     const offered = async () => (await this.form.email.inputValue().catch(() => '')).includes('@');
+    // A refused link sends the person to the plain sign-in page. Since 2.64.1 the link
+    // itself opens /welcome, with the invite token, so only /welcome without it is a refusal.
+    const sentAway = () => {
+      const url = new URL(this.page.url());
+      return url.pathname === '/welcome' && !url.searchParams.has('inviteToken');
+    };
     await expect
-      .poll(
-        async () =>
-          (await offered()) || (await answer.isVisible()) || this.page.url().includes('/welcome'),
-        { message: 'the invitation form or a refusal', timeout: PAGE_LOAD },
-      )
+      .poll(async () => (await offered()) || (await answer.isVisible()) || sentAway(), {
+        message: 'the invitation form or a refusal',
+        timeout: PAGE_LOAD,
+      })
       .toBe(true);
     if ((await offered()) && !(await answer.isVisible())) {
       await this.signUp(password);

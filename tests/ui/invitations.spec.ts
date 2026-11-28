@@ -104,9 +104,14 @@ test.describe('invitations', () => {
       );
       await removeInvitation(request, adminToken, sent?.id ?? '');
 
-      // A refusal may come at the link or at sign-up; either way, no member is made.
       await new InvitationPage(guestPage).tryToJoin(link, password);
 
+      // The link still opens the form; the sign-up is what is refused, and no member is made.
+      await expect(
+        guestPage
+          .getByRole('status')
+          .filter({ hasText: 'User does not have access to this workspace' }),
+      ).toBeVisible();
       expect(await membershipOf(request, adminToken, invitee.address)).toBeUndefined();
     },
   );
