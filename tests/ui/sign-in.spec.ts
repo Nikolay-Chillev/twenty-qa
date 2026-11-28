@@ -101,6 +101,8 @@ test.describe('password reset', () => {
     mailbox,
     password,
   }) => {
+    // Five loads of the app: up to a minute in Firefox in CI, more than the usual time.
+    test.slow();
     const signIn = new SignInPage(page);
     const navigation = new Navigation(page);
     const changed = newPassword();
