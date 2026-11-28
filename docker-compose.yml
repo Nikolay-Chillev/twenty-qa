@@ -35,7 +35,7 @@ x-twenty: &twenty
 services:
   server:
     <<: *twenty
-    image: twentycrm/twenty:v2.60.1@sha256:b190e54ca434ea1ee47fe73b8d76e77d0bf3c6f734fcec58e414108d6867939c
+    image: twentycrm/twenty:v2.65.0@sha256:12ba515d431a7bc24b843fc7d9f4888ae432969023dea4d5c00c7c19f2545f9f
     ports:
       - "3000:3000"
     environment:
@@ -61,7 +61,7 @@ services:
 
   worker:
     <<: *twenty
-    image: twentycrm/twenty:v2.60.1@sha256:b190e54ca434ea1ee47fe73b8d76e77d0bf3c6f734fcec58e414108d6867939c
+    image: twentycrm/twenty:v2.65.0@sha256:12ba515d431a7bc24b843fc7d9f4888ae432969023dea4d5c00c7c19f2545f9f
     command: ["yarn", "worker:prod"]
     environment:
       <<: *twenty-env
