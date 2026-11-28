@@ -12,7 +12,10 @@ test.describe('invitations', () => {
       await sendInvitations(request, adminToken, [invitee.address]);
 
       const email = await invitee.waitForEmail({ subject: 'Join your team on Twenty' });
-      expect(linkIn(email, '/invite/')).toContain(`email=${encodeURIComponent(invitee.address)}`);
+      // Since 2.64.1 the link opens the sign-in page with a personal invite token.
+      expect(linkIn(email, '/welcome?inviteToken=')).toContain(
+        `email=${encodeURIComponent(invitee.address)}`,
+      );
       const sent = (await listInvitations(request, adminToken)).find(
         (one) => one.email === invitee.address,
       );

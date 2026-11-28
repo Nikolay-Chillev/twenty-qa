@@ -33,7 +33,7 @@ test.describe('invitations', () => {
     const email = await invitee.waitForEmail({ subject: SUBJECT });
     expect(email.Text).toContain(`has invited you to join a workspace called ${WORKSPACE_NAME}`);
     const invitation = await new InvitationPage(guestPage).open(
-      linkIn(email, `${WORKSPACE_URL}/invite/`),
+      linkIn(email, `${WORKSPACE_URL}/welcome?inviteToken=`),
     );
     await expect(invitation.heading(WORKSPACE_NAME)).toBeVisible();
     await expect(invitation.form.email).toHaveValue(invitee.address);
@@ -87,22 +87,31 @@ test.describe('invitations', () => {
     expect(pending.map((one) => one.email)).not.toContain(invitee.address);
   });
 
-  // While the workspace's invite link is on, as it is by default, the link in the email
-  // still lets the person in after the invitation is removed.
-  test.fail(
+  // Before 2.64.1 the email gave the workspace's public invite link, which still let the
+  // person in after the invitation was removed (finding #54). It now gives a personal
+  // invite token, and signing up with it is refused once the invitation is gone.
+  test(
     'the link of a removed invitation no longer lets the person join',
     { annotation: { type: 'issue', description: `${ISSUES}/54` } },
     async ({ guestPage, request, adminToken, invitee, password }) => {
       await sendInvitations(request, adminToken, [invitee.address]);
-      const link = linkIn(await invitee.waitForEmail({ subject: SUBJECT }), '/invite/');
+      const link = linkIn(
+        await invitee.waitForEmail({ subject: SUBJECT }),
+        '/welcome?inviteToken=',
+      );
       const sent = (await listInvitations(request, adminToken)).find(
         (one) => one.email === invitee.address,
       );
       await removeInvitation(request, adminToken, sent?.id ?? '');
 
-      // A refusal may come at the link or at sign-up; either way, no member is made.
       await new InvitationPage(guestPage).tryToJoin(link, password);
 
+      // The link still opens the form; the sign-up is what is refused, and no member is made.
+      await expect(
+        guestPage
+          .getByRole('status')
+          .filter({ hasText: 'User does not have access to this workspace' }),
+      ).toBeVisible();
       expect(await membershipOf(request, adminToken, invitee.address)).toBeUndefined();
     },
   );

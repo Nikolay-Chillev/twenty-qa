@@ -186,31 +186,24 @@ test.describe('the opportunities board', () => {
       return { page, board, deal, reopen: () => board.open(viewId, tag) };
     }
 
-    const refusal = (page: Page) =>
-      page.getByRole('status').filter({ hasText: 'User does not have permission.' });
-
-    test('has a move refused, and the deal keeps its stage', async ({
-      api,
-      views,
-      roles,
-      signInWithRole,
-    }) => {
-      const { page, board, deal, reopen } = await readerBoard({
+    test('cannot drag a deal to another stage', async ({ api, views, roles, signInWithRole }) => {
+      const { board, deal, reopen } = await readerBoard({
         api,
         views,
         roles,
         signInWithRole,
       });
 
-      await board.drag(deal.id, { column: 'Screening' });
+      await board.tryToDrag(deal.id, 'Screening');
 
-      await expect(refusal(page)).toBeVisible();
+      // Before 2.63.0 the card could be dropped there, and the server refused the move.
+      expect(await board.columnOf(deal.id)).toBe('New');
       expect((await api.opportunities.get(deal.id)).stage).toBe('NEW');
       await reopen();
       expect(await board.columnOf(deal.id)).toBe('New');
     });
 
-    test.fail(
+    test(
       'is not offered to move a deal',
       { annotation: { type: 'issue', description: `${ISSUES}/88` } },
       async ({ api, views, roles, signInWithRole }) => {

@@ -9,18 +9,24 @@ import { type TestUser, WORKSPACE_URL } from './users';
 // signature, each in base64url, joined by dots.
 
 const Token = z.object({ token: z.string() });
-const Tokens = z.object({ accessOrWorkspaceAgnosticToken: Token, refreshToken: Token });
+const Tokens = z.object({
+  accessOrWorkspaceAgnosticToken: Token,
+  refreshToken: Token.nullable(),
+});
 
 export interface TokenPair {
   /** For API calls; valid for 30 minutes. */
   access: string;
-  /** For getting a new pair once the access token expires; valid for 60 days. */
-  refresh: string;
+  /**
+   * For getting a new pair once the access token expires; valid for 60 days. Null since
+   * 2.65.0, which stopped issuing refresh tokens to the web app's sign-in.
+   */
+  refresh: string | null;
 }
 
 const pairOf = (tokens: z.infer<typeof Tokens>): TokenPair => ({
   access: tokens.accessOrWorkspaceAgnosticToken.token,
-  refresh: tokens.refreshToken.token,
+  refresh: tokens.refreshToken?.token ?? null,
 });
 
 /**

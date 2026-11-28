@@ -94,7 +94,7 @@ test.describe('saved views', () => {
 
     expect(await views.get(id)).toMatchObject({
       name: `Изглед ${tag}`,
-      visibility: 'WORKSPACE',
+      isPrivate: false,
       viewFilters: [{ operand: 'CONTAINS', value: tag }],
       viewSorts: [{ direction: 'DESC' }],
     });

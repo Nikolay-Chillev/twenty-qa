@@ -5,7 +5,8 @@ import { graphql, GraphQLError } from './graphql';
 import { objectMetadata } from './metadata';
 
 // Saved views of the record tables. Twenty keeps them with the workspace's metadata, on
-// /metadata; a view with WORKSPACE visibility is listed for every member.
+// /metadata; a view that is not private is listed for every member (until 2.64, a view
+// with WORKSPACE visibility).
 
 const ViewField = z.object({
   fieldMetadataId: z.uuid(),
@@ -31,7 +32,7 @@ export const View = z.object({
   /** `INDEX` for the object's own view, e.g. "All Companies"; null for the views people save. */
   key: z.string().nullable(),
   position: z.number(),
-  visibility: z.enum(['WORKSPACE', 'UNLISTED']),
+  isPrivate: z.boolean(),
   objectMetadataId: z.uuid(),
   viewFields: z.array(ViewField),
   viewFilters: z.array(ViewFilter),
@@ -39,7 +40,7 @@ export const View = z.object({
 });
 export type View = z.infer<typeof View>;
 
-const VIEW = `id name key position visibility objectMetadataId
+const VIEW = `id name key position isPrivate objectMetadataId
   viewFields { fieldMetadataId position isVisible size }
   viewFilters { fieldMetadataId operand value }
   viewSorts { fieldMetadataId direction }`;
@@ -119,7 +120,7 @@ export class ViewsApi {
           // Twenty opens /objects/<plural> on the first view in the list; last, this one
           // changes nothing for other tests.
           position: Math.max(...views.map((other) => other.position)) + 1,
-          visibility: 'WORKSPACE',
+          isPrivate: false,
         },
       },
       z.object({ createView: z.object({ id: z.uuid() }) }),
