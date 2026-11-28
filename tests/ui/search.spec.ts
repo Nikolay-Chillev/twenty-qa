@@ -12,7 +12,7 @@ test.describe('search with Ctrl+K', () => {
 
     await menu.openWithKeyboard();
     await menu.search(word.toLowerCase());
-    await menu.result(company.name, 'Company').click();
+    await menu.result(company.name, 'Companies').click();
 
     await expect(page).toHaveURL(new RegExp(company.id), { timeout: PAGE_LOAD });
     await expect(page.getByRole('heading', { name: company.name })).toBeVisible();
@@ -38,8 +38,8 @@ test.describe('search with Ctrl+K', () => {
     await menu.search(word);
 
     await expect(
-      menu.result(`${person.name.firstName} ${person.name.lastName}`, 'Person'),
+      menu.result(`${person.name.firstName} ${person.name.lastName}`, 'People'),
     ).toBeVisible();
-    await expect(menu.result(company.name, 'Company')).toHaveCount(0);
+    await expect(menu.result(company.name, 'Companies')).toHaveCount(0);
   });
 });

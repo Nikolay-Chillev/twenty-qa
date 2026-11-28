@@ -43,11 +43,22 @@ export class CommandMenu {
   async search(text: string): Promise<void> {
     await this.input.fill(text);
     await this.action('Search /').click();
-    await expect(this.page.getByText('Results', { exact: true })).toBeVisible();
+    // Since 2.64 the search keeps the text in a box of its own.
+    await expect(this.page.getByRole('textbox', { name: 'Search' })).toHaveValue(text);
   }
 
-  /** A record in the search results, by its name and the label of its object. */
-  result(name: string, object: string): Locator {
-    return this.page.getByRole('button', { name: `${name} ·${object}`, exact: true });
+  /**
+   * A record in the search results, by its name, under the heading of its object, e.g.
+   * "Companies" (until 2.64, a button named "<name> ·Company").
+   */
+  result(name: string, objects: string): Locator {
+    const record = this.page.getByRole('button', { name, exact: true });
+    return this.page
+      .getByRole('complementary')
+      .locator('div')
+      .filter({ has: this.page.getByText(objects, { exact: true }) })
+      .filter({ has: record })
+      .last()
+      .getByRole('button', { name, exact: true });
   }
 }

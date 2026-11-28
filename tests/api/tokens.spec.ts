@@ -86,28 +86,28 @@ test.describe('tokens', () => {
       .toEqual({ status: 401, messages: ['Token has expired.'] });
   });
 
-  test('a refresh token renews the tokens, and the new access token works', async ({
-    request,
-    password,
-  }) => {
-    const { refresh } = await signInForTokens(request, USERS.member, password);
-
-    const renewed = await renewTokens(request, refresh);
-
-    expect(renewed.refresh).not.toBe(refresh);
-    expect(await restAnswer(apiFor(request, renewed.access))).toEqual({ status: 200 });
-  });
-
-  test('renewal refuses a changed refresh token, and an access token in its place', async ({
+  // Since 2.65.0 Twenty no longer issues refresh tokens to a sign-in: the web app keeps
+  // its session in a cookie, and renewToken is deprecated.
+  test('signing in gives a working access token and no refresh token', async ({
     request,
     password,
   }) => {
     const { access, refresh } = await signInForTokens(request, USERS.member, password);
 
-    const changed = await failure(renewTokens(request, withBrokenSignature(refresh)));
-    const notRefresh = await failure(renewTokens(request, access));
+    expect(refresh).toBeNull();
+    expect(await restAnswer(apiFor(request, access))).toEqual({ status: 200 });
+  });
 
-    expect(changed.messages).toEqual(['Token invalid.']);
+  test('renewal refuses an access token, and a changed one, in place of a refresh token', async ({
+    request,
+    password,
+  }) => {
+    const { access } = await signInForTokens(request, USERS.member, password);
+
+    const notRefresh = await failure(renewTokens(request, access));
+    const changed = await failure(renewTokens(request, withBrokenSignature(access)));
+
     expect(notRefresh.messages).toEqual(['Expected a refresh token']);
+    expect(changed.messages).toEqual(['Token invalid.']);
   });
 });
